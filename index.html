@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post Franchise Operation Tracker</title>
+<style>
+:root{
+  --ink:#14231d; --ink-2:#3c4f47; --ink-3:#7a8b84;
+  --surface:#eef1ee; --panel:#fff; --line:#d6ddd8;
+  --green:#0f6b4f; --green-soft:#e3f0ea;
+  --amber:#a9700d; --amber-soft:#fbf0da;
+  --red:#b5342a; --red-soft:#fbe8e6;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--ink);
+  font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+
+header{background:var(--ink);color:#fff;padding:15px 22px}
+.hwrap{max-width:1220px;margin:0 auto;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}
+header .sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8fae9f;font-weight:700;margin-top:3px}
+header input{background:#22362e;border:1px solid #3a5348;color:#fff;padding:8px 10px;border-radius:6px;font:inherit}
+
+nav{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.nwrap{max-width:1220px;margin:0 auto;display:flex;gap:2px;overflow-x:auto}
+.tab{padding:13px 18px;border:0;background:none;font:inherit;font-weight:600;color:var(--ink-3);cursor:pointer;
+  border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--green);border-bottom-color:var(--green)}
+
+main{max-width:1220px;margin:0 auto;padding:22px}
+.page{display:none}.page.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:18px}
+.card h2{margin:0 0 2px;font-size:17px;font-weight:800;letter-spacing:-.01em}
+.card p.hint{margin:0 0 16px;color:var(--ink-3);font-size:13px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
+label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
+input[type=number]{font-family:var(--mono)}
+textarea{min-height:60px;resize:vertical}
+
+.btn{padding:10px 18px;border:0;border-radius:6px;background:var(--green);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.btn:hover{background:#0c5741}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--surface)}
+.btn.sm{padding:6px 12px;font-size:13px}
+
+.pickbar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
+.pickbar>div{flex:1;min-width:230px}
+
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:6px 13px;border-radius:20px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13px;
+  font-weight:700;cursor:pointer;color:var(--ink-2)}
+.chip:hover{border-color:var(--ink-3)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .c{font-family:var(--mono);opacity:.7;margin-left:5px}
+
+.tally{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin-bottom:16px}
+.t{padding:12px 14px;border-radius:8px;background:var(--surface)}
+.t .v{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1.1;margin-top:2px}
+.t.ok{background:var(--green-soft)}.t.ok .v{color:var(--green)}
+.t.dev{background:var(--red-soft)}.t.dev .v{color:var(--red)}
+.t.pen{background:var(--amber-soft)}.t.pen .v{color:var(--amber)}
+
+.rows{display:grid;gap:8px}
+.row{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.rhead{display:flex;gap:12px;align-items:center;padding:12px 15px;cursor:pointer}
+.rhead:hover{background:#fafbfa}
+.rhead .no{font-family:var(--mono);font-size:12px;color:var(--ink-3);width:32px;flex:none}
+.rhead .nm{flex:1;min-width:0;font-weight:600}
+.rhead .nm small{display:block;font-weight:400;font-size:12px;color:var(--ink-3);margin-top:1px}
+.rhead .caret{color:var(--ink-3);font-size:12px;flex:none}
+.rbody{display:none;padding:0 15px 18px;border-top:1px solid var(--line)}
+.row.open .rbody{display:block}
+.row.open .rhead{background:#fafbfa}
+
+.pill{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11.5px;font-weight:800;letter-spacing:.03em;white-space:nowrap;flex:none}
+.p-ok{background:var(--green-soft);color:var(--green)}
+.p-dev{background:var(--red-soft);color:var(--red)}
+.p-pen{background:var(--amber-soft);color:var(--amber)}
+
+.meta{display:flex;gap:22px;flex-wrap:wrap;padding:12px 0 16px;font-size:12.5px;color:var(--ink-2)}
+.meta div{max-width:300px}
+.meta b{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  padding:8px 10px;border-bottom:2px solid var(--line)}
+th.r,td.r{text-align:right}
+td{padding:9px 10px;border-bottom:1px solid var(--line)}
+tr.group td{background:var(--surface);font-weight:800;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+tr.total td{font-weight:800;border-top:2px solid var(--ink);border-bottom:0;background:#fbfcfb}
+td input{padding:6px 8px;width:95px;text-align:right}
+.dn{color:var(--red);font-weight:700}.dp{color:var(--green);font-weight:700}
+
+.lbar{display:flex;height:46px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin-bottom:6px}
+.lseg{display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;min-width:0;padding:0 4px}
+.lseg b{font-family:var(--mono);font-size:14px;line-height:1.1}
+.lseg span{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.s1{background:#1b7d5e}.s2{background:#2f9a76}.s3{background:#57b391}.s4{background:#c97a12}
+.ltot{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2);margin-bottom:16px}
+.ltot b{font-family:var(--mono);font-size:22px;color:var(--ink)}
+
+.split{display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;align-items:start}
+.side{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;
+  position:sticky;top:70px;max-height:calc(100vh - 92px);overflow-y:auto}
+.sgroup{padding:9px 14px;background:var(--surface);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;font-weight:800;color:var(--ink-3);border-bottom:1px solid var(--line)}
+.sitem{display:flex;gap:9px;align-items:center;width:100%;text-align:left;padding:11px 14px;
+  border:0;border-bottom:1px solid var(--line);background:#fff;font:inherit;cursor:pointer;color:var(--ink)}
+.sitem:hover{background:#fafbfa}
+.sitem.on{background:var(--green-soft);box-shadow:inset 3px 0 0 var(--green)}
+.sitem .no{font-family:var(--mono);font-size:11px;color:var(--ink-3);width:26px;flex:none}
+.sitem .nm{flex:1;min-width:0;font-size:13.5px;font-weight:600;line-height:1.35}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.dot-ok{background:var(--green)}.dot-dev{background:var(--red)}
+.dot-pending{background:#cfa23f}
+.tri{padding:5px 11px;border:1px solid var(--line);background:#fff;border-radius:5px;font:inherit;
+  font-size:12px;font-weight:700;cursor:pointer;color:var(--ink-3);white-space:nowrap}
+.tri+.tri{margin-left:4px}
+.tri:hover{border-color:var(--ink-3)}
+.tri.on-yes{background:var(--green);border-color:var(--green);color:#fff}
+.tri.on-no{background:var(--red);border-color:var(--red);color:#fff}
+.tri.on-na{background:var(--ink-3);border-color:var(--ink-3);color:#fff}
+.ven{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;
+  color:var(--ink-3);background:var(--surface);padding:2px 8px;border-radius:4px}
+.srch{max-width:320px}
+.empty{padding:36px 20px;text-align:center;color:var(--ink-3);font-size:14px}
+.detail{border:1px solid var(--line);border-radius:10px;background:#fff;padding:20px;min-width:0}
+.dhead{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;justify-content:space-between;margin-bottom:2px}
+.dhead h3{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em}
+@media (max-width:860px){.split{grid-template-columns:1fr}.side{position:static;max-height:320px}}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:12px 22px;border-radius:8px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.toast.on{opacity:1}
+@media (max-width:640px){.lseg span{display:none}main{padding:14px}.card{padding:15px}.rhead .nm small{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{
+  header,nav,.noprint,.btn{display:none!important}
+  body{background:#fff}
+  main{max-width:none;padding:0}
+  .card{border:0;padding:0 0 18px;page-break-inside:avoid}
+  .find{page-break-inside:avoid}
+}
+.find{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.find .ix{font-family:var(--mono);font-size:12px;color:var(--ink-3);width:24px;flex:none;padding-top:3px}
+.find .fb{flex:1;min-width:0}
+.find .fb b{display:block;font-size:14.5px}
+.find .fb span{font-size:13px;color:var(--ink-2)}
+.find .ar{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--ink-3);
+  background:var(--surface);padding:3px 9px;border-radius:4px;flex:none;white-space:nowrap}
+.verdict{padding:14px 16px;border-radius:8px;margin:14px 0 4px;font-weight:700}
+.v-ok{background:var(--green-soft);color:var(--green)}
+.v-bad{background:var(--red-soft);color:var(--red)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hwrap">
+    <div>
+      <h1>Post Franchise Operation Tracker</h1>
+      <div class="sub">Mr. Goli Soda &middot; Operations Screening</div>
+    </div>
+    <div><input type="month" id="monthSel" onchange="onMonth()"></div>
+  </div>
+</header>
+
+<nav><div class="nwrap">
+  <button class="tab on" onclick="go(this,'p-dash')">Dashboard</button>
+  <button class="tab" onclick="go(this,'p-fv')">Franchisee view</button>
+  <button class="tab" onclick="go(this,'p-pv')">Process view</button>
+  <button class="tab" onclick="go(this,'p-report')">Report</button>
+  <button class="tab" onclick="go(this,'p-mgmt')">Franchises</button>
+</div></nav>
+
+<main>
+
+<!-- ========== DASHBOARD ========== -->
+<div id="p-dash" class="page on">
+  <div id="dashOut"></div>
+</div>
+
+<!-- ========== FRANCHISEE VIEW ========== -->
+<div id="p-fv" class="page">
+  <div class="card">
+    <div class="eyebrow">One franchise &middot; all processes</div>
+    <h2>Franchisee view</h2>
+    <p class="hint">Pick a franchise to run the three-point screening check for the selected month.</p>
+    <div class="pickbar">
+      <div><label>Franchise</label><select id="fvPick" onchange="renderFV()"></select></div>
+    </div>
+    <div id="fvOut"></div>
+  </div>
+</div>
+
+<!-- ========== PROCESS VIEW ========== -->
+<div id="p-pv" class="page">
+  <div class="card">
+    <div class="eyebrow">One process &middot; all franchises</div>
+    <h2>Process view</h2>
+    <p class="hint">Pick a check to compare every franchise on it, grouped by state.</p>
+    <div class="pickbar">
+      <div><label>Process</label><select id="pvPick" onchange="renderPV()"></select></div>
+    </div>
+    <div id="pvOut"></div>
+  </div>
+</div>
+
+<!-- ========== REPORT ========== -->
+<div id="p-report" class="page">
+  <div class="card noprint">
+    <div class="eyebrow">Screening outcome</div>
+    <h2>Franchisee problem report</h2>
+    <p class="hint">Everything the check found, franchise by franchise. Take this into the sit-down with the franchisee.</p>
+    <div class="pickbar">
+      <div><label>Scope</label><select id="rpPick" onchange="renderReport()">
+        <option value="all">All franchises</option>
+        <option value="problem">Only franchises with problems</option>
+      </select></div>
+      <button class="btn ghost" onclick="window.print()">Print report</button>
+    </div>
+  </div>
+  <div id="rpOut"></div>
+</div>
+
+<!-- ========== FRANCHISE MANAGEMENT ========== -->
+<div id="p-mgmt" class="page">
+  <div class="card">
+    <div class="eyebrow">Setup</div>
+    <h2>Create a franchise</h2>
+    <p class="hint">The target and route setup entered here drives the stock calculation for every month.</p>
+    <div class="grid">
+      <div><label>Franchise name</label><input id="cName" placeholder="e.g. Coimbatore Unit"></div>
+      <div><label>City</label><input id="cCity" placeholder="Coimbatore"></div>
+      <div><label>State</label><input id="cState" placeholder="Tamil Nadu"></div>
+      <div><label>Monthly target (bottles)</label><input type="number" id="cTarget" value="30000" min="0"></div>
+      <div><label>Working days</label><input type="number" id="cDays" value="25" min="1"></div>
+      <div><label>Bottles per tray</label><input type="number" id="cBpt" value="24" min="1"></div>
+      <div><label>Market supply frequency</label>
+        <select id="cFreq" onchange="onFreqCreate()">
+          <option value="6">Weekly 3 times &mdash; 6 routes</option>
+          <option value="3">Weekly 2 times &mdash; 3 routes</option>
+          <option value="custom">Custom route count</option>
+        </select></div>
+      <div><label>Number of routes</label><input type="number" id="cRoutes" value="6" min="0" oninput="onRoutesCreate()"></div>
+      <div><label>Total trays available in factory</label><input type="number" id="cTrays" value="1000" min="0" oninput="showCap()">
+        <div class="hint" id="capNote" style="margin:5px 0 0;font-size:12px"></div></div>
+    </div>
+    <div style="margin-top:16px"><button class="btn" onclick="addFranchise()">Create franchise</button></div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Master list</div>
+    <h2>Franchises</h2>
+    <p class="hint">Setup values can be edited any time. Export keeps a backup for the ERP handover.</p>
+    <div class="chips">
+      <button class="btn ghost sm" onclick="exportData()">Export JSON</button>
+      <button class="btn ghost sm" onclick="document.getElementById('imp').click()">Import JSON</button>
+      <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+    <div id="mgmtOut"></div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Checklist master</div>
+    <h2>Spares checklist</h2>
+    <p class="hint">One list, applied to every franchise. 54 parts loaded from your machine spares sheet, with the quantity each factory must hold.</p>
+    <div class="pickbar">
+      <div><label>Part description</label><input id="spName" placeholder="e.g. Filling nozzle set" onkeydown="if(event.key==='Enter')addSpare()"></div>
+      <div style="flex:none;width:120px"><label>Qty needed</label><input type="number" id="spQty" value="1" min="0"></div>
+      <div style="flex:none;min-width:180px"><label>Vendor</label><select id="spVendor"></select></div>
+      <button class="btn" onclick="addSpare()">Add item</button>
+    </div>
+    <div id="spOut"></div>
+  </div>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ storage ============ */
+var mem={};
+var store={
+ get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):(mem[k]!==undefined?mem[k]:d);}catch(e){return mem[k]!==undefined?mem[k]:d;}},
+ set:function(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}cloud.push(k,v);}
+};
+
+/* ============ supabase cloud sync ============ */
+var SB_URL='https://fajhvuspgsdfjkjoqhjw.supabase.co/rest/v1/';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhamh2dXNwZ3NkZmpram9xaGp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1Nzg5MjIsImV4cCI6MjEwMTE1NDkyMn0.Z7J8iMEj1RVnCOSihuzupTEk-l0tB1yl6JQI-us41Ew';
+var SB_TABLE='kv_store';
+var SB_KEYS=['gs_franchises','gs_entries','gs_spares_v2','gs_month'];
+var cloud={
+ hydrating:false,
+ hdr:function(extra){var h={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};if(extra)for(var x in extra)h[x]=extra[x];return h;},
+ push:function(k,v){
+   if(cloud.hydrating)return;
+   if(SB_KEYS.indexOf(k)<0)return;
+   fetch(SB_URL+SB_TABLE,{
+     method:'POST',
+     headers:cloud.hdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+     body:JSON.stringify({k:k,v:v,updated_at:new Date().toISOString()})
+   }).catch(function(){});
+ },
+ pull:function(cb){
+   fetch(SB_URL+SB_TABLE+'?select=k,v',{headers:cloud.hdr()})
+     .then(function(r){return r.ok?r.json():[];})
+     .then(function(rows){
+       cloud.hydrating=true;
+       var got={};
+       for(var i=0;i<rows.length;i++)got[rows[i].k]=rows[i].v;
+       if(got.gs_franchises!==undefined){franchises=got.gs_franchises;store.set('gs_franchises',franchises);}
+       if(got.gs_entries!==undefined){entries=got.gs_entries;store.set('gs_entries',entries);}
+       if(got.gs_spares_v2!==undefined){spareItems=got.gs_spares_v2;store.set('gs_spares_v2',spareItems);}
+       if(got.gs_month!==undefined){month=got.gs_month;store.set('gs_month',month);}
+       cloud.hydrating=false;
+       cb(Object.keys(got).length>0);
+     })
+     .catch(function(){cloud.hydrating=false;cb(false);});
+ }
+};
+
+/* ============ process master (from the operation sheet) ============ */
+var D_MGMT='Next day — Management & NSM / Head team responsible';
+var E_FINAL='Final update to Chandru sir';
+var R_INT='Internal team handles the work';
+
+var PROCESSES=[
+ {id:'A1',sec:'A',no:1,name:'Minimum Stock Maintaining',rem:R_INT,dl:'Within 3 days — escalate to Management',esc:E_FINAL,type:'stock'},
+ {id:'A2',sec:'A',no:2,name:'Minimum Raw Materials Maintaining',rem:R_INT,dl:'Within 3 days — escalate to Management',esc:E_FINAL,type:'raw'},
+ {id:'A3',sec:'A',no:3,name:'Minimum Spares Maintaining',rem:R_INT,dl:'Next day — Management & NSM / Head team',esc:'3rd day update to Chandru sir',type:'spares'}
+];
+
+var FACTORY=[
+ {key:'vehicle',name:'Vehicle loading',mult:1.4,note:'Stock loaded on the vehicle'},
+ {key:'empty',name:'Empty trays for production',mult:1.2,note:'Without empties, no production'},
+ {key:'stock',name:'Finished goods stock (2 days)',mult:2.0,note:'Two days of buffer'}
+];
+var FACTORY_MULT=4.6, PER_ROUTE=1.5, BATCH_BOTTLES=560;
+
+var SPARES_SEED=[["1/2 ball valve",2,"Akshay"],["1/2 m f brass adaptor",2,"Akshay"],["1/2 m f brass elbow",2,"Akshay"],["1/2x1/4 coupling",2,"Akshay"],["1/4 frl parts",2,"Akshay"],["1/4 union",2,"Akshay"],["1/4x10 mm elbow",2,"Akshay"],["1/4x10 mm pu brass adaptor",2,"Akshay"],["1/4x8 elbow",20,"Akshay"],["1/8 silencer",8,"Akshay"],["10 mm hose",4,"Akshay"],["21/2 mtr hose",1,"Akshay"],["3 mtr hose",2,"Akshay"],["3/4 \" ball valve",1,"Akshay"],["3/4 x 1/2 brass adopter",1,"Akshay"],["3/4x1/2 union",1,"Akshay"],["3/4x3/4 union",1,"Akshay"],["3/8 wheel valve",1,"Akshay"],["3/8x1/4 brass union",1,"Akshay"],["30 pump seal kit",1,"Akshay"],["32x25 seal kit",1,"Akshay"],["50x100 seal kit",1,"Akshay"],["8 mm hose",10,"Akshay"],["8 mm tee",14,"Akshay"],["A40 belt",1,"Akshay"],["Bottle table sheet",2,"Akshay"],["Filling valve cap washer",4,"Akshay"],["Filling valve fixing washer",4,"Akshay"],["Filling valve spool washer",12,"Akshay"],["Filling valve spring",4,"Akshay"],["Flow control valve",4,"Akshay"],["GG O ring",20,"Akshay"],["Goli head rubber",4,"Akshay"],["Heater",1,"Akshay"],["Nrv complete",1,"Akshay"],["One side solinad valve",2,"Akshay"],["Push button & element",2,"Akshay"],["Regulator",1,"Akshay"],["Safety valve",1,"Akshay"],["Water level controller",1,"Akshay"],["AIRA BSD COIL",1,"Soda Hub"],["AIRA GSD COIL",1,"Soda Hub"],["AIRA MAKE 2/2 WAY DIRECT ACTING SOLENOID VALVE 10 KG PRESSURE",1,"Soda Hub"],["BULP SENSOR 28 MM",2,"Soda Hub"],["DANFOSE KP35",1,"Soda Hub"],["INPUT CARD",1,"Soda Hub"],["NECK SEAL",2,"Soda Hub"],["OUTPUT CARD",1,"Soda Hub"],["PT 100 SENSOR",1,"Soda Hub"],["SEAL KIT-A12-32MMDIA",1,"Soda Hub"],["SEAL KIT-A12-50MMDIA",1,"Soda Hub"],["PIPE FLEXIBLE - 1/4*1MTR SS",1,"Soda Hub"],["CONDUCTER 220 VOLT",1,"Soda Hub"],["CO2 GAS BRASS NUTS & NIPPLE",2,"Soda Hub"]];
+
+
+/* ============ state ============ */
+var franchises=store.get('gs_franchises',[]);
+var entries=store.get('gs_entries',{});
+var spareItems=store.get('gs_spares_v2',[]);
+var month=store.get('gs_month','');
+var fvFilter='all', pvFilter='all', fvSel=null, pvSel=null, activePage='p-fv';
+
+function $(id){return document.getElementById(id);}
+function fmt(x){return Math.round(x).toLocaleString('en-IN');}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m){var t=$('toast');t.textContent=m;t.className='toast on';setTimeout(function(){t.className='toast';},1900);}
+function proc(id){for(var i=0;i<PROCESSES.length;i++)if(PROCESSES[i].id===id)return PROCESSES[i];return null;}
+function fran(id){for(var i=0;i<franchises.length;i++)if(franchises[i].id===id)return franchises[i];return null;}
+function label(p){return p.no+'. '+p.name;}
+
+function go(btn,page){
+  var t=document.querySelectorAll('.tab');for(var i=0;i<t.length;i++)t[i].className='tab';
+  btn.className='tab on';
+  var q=document.querySelectorAll('.page');for(var j=0;j<q.length;j++)q[j].className='page';
+  $(page).className='page on'; activePage=page;
+  if(page==='p-dash')renderDash(); if(page==='p-fv')renderFV(); if(page==='p-pv')renderPV();
+  if(page==='p-report')renderReport(); if(page==='p-mgmt'){renderMgmt();renderSpares();}
+}
+function onMonth(){month=$('monthSel').value;store.set('gs_month',month);renderDash();renderFV();renderPV();}
+
+/* ============ entries ============ */
+function key(fid,pid){return fid+'|'+pid+'|'+month;}
+function getEntry(fid,pid){
+  var e=entries[key(fid,pid)];
+  if(!e){e={status:'pending',actual:{},remarks:'',owner:'',target:'',days:''};}
+  return e;
+}
+function setEntry(fid,pid,e){entries[key(fid,pid)]=e;store.set('gs_entries',entries);}
+
+/* ============ stock model ============ */
+function model(f,e){
+  var target=(e.target!==''&&e.target!=null)?parseFloat(e.target):f.target;
+  var days=(e.days!==''&&e.days!=null)?parseFloat(e.days):f.days;
+  target=isNaN(target)?0:target; days=(isNaN(days)||days<=0)?1:days;
+  var bpt=f.bpt>0?f.bpt:1;
+  var dailyBottles=target/days, dailyTrays=dailyBottles/bpt;
+  var marketMult=f.routes*PER_ROUTE, totalMult=FACTORY_MULT+marketMult;
+  return {target:target,days:days,dailyBottles:dailyBottles,dailyTrays:dailyTrays,
+    marketMult:marketMult,totalMult:totalMult,
+    factoryTrays:dailyTrays*FACTORY_MULT,marketTrays:dailyTrays*marketMult,totalTrays:dailyTrays*totalMult};
+}
+
+/* status: 'ok' | 'dev' | 'pending' */
+function statusOf(fid,pid){
+  var p=proc(pid), e=getEntry(fid,pid);
+  if(p.type==='stock'){
+    var f=fran(fid), m=model(f,e), a=e.actual||{}, short=false;
+    var need={vehicle:m.dailyTrays*1.4,empty:m.dailyTrays*1.2,stock:m.dailyTrays*2.0,market:m.marketTrays};
+    var keys=['vehicle','empty','stock','market'];
+    for(var i=0;i<keys.length;i++){
+      var v=a[keys[i]];
+      if(v===''||v==null||isNaN(parseFloat(v)))return 'pending';
+      if(parseFloat(v)<need[keys[i]]-0.5)short=true;
+    }
+    var ow=f.trays||0;
+    if(ow>0&&ow<m.totalTrays-0.5)short=true;
+    return short?'dev':'ok';
+  }
+  if(p.type==='spares'){
+    if(!spareItems.length)return 'pending';
+    var q=e.qty||{}, bad=false;
+    for(var z=0;z<spareItems.length;z++){
+      var v=q[spareItems[z].id];
+      if(v===''||v==null||isNaN(parseFloat(v)))return 'pending';
+      if(parseFloat(v)<(spareItems[z].qty||0))bad=true;
+    }
+    return bad?'dev':'ok';
+  }
+  if(p.type==='raw'){
+    var rf=fran(fid), r=rawModel(rf,e), fl=r.flavours;
+    if(!fl.length)return 'pending';
+    for(var q=0;q<fl.length;q++){
+      var bv=fl[q].batches;
+      if(bv===''||bv==null||isNaN(parseFloat(bv)))return 'pending';
+    }
+    if(e.sleeve===''||e.sleeve==null||isNaN(parseFloat(e.sleeve)))return 'pending';
+    return (r.batchGap<-0.01||r.sleeveGap<-0.5)?'dev':'ok';
+  }
+  return e.status||'pending';
+}
+function pill(s){
+  if(s==='ok')return '<span class="pill p-ok">On target</span>';
+  if(s==='dev')return '<span class="pill p-dev">Deviation</span>';
+  return '<span class="pill p-pen">Not filled</span>';
+}
+
+/* ============ franchise management ============ */
+function onFreqCreate(){var v=$('cFreq').value;if(v!=='custom')$('cRoutes').value=v;}
+function onRoutesCreate(){
+  var r=$('cRoutes').value;
+  $('cFreq').value=(r==='6'||r==='3')?r:'custom';
+}
+function showCap(){
+  var t=parseFloat($('cTrays').value)||0, b=parseFloat($('cBpt').value)||0;
+  $('capNote').textContent = t&&b ? ('Holds '+fmt(t*b)+' bottles') : '';
+}
+function addFranchise(){
+  var nm=$('cName').value.trim();
+  if(!nm){toast('Enter a franchise name');return;}
+  franchises.push({id:'f'+Date.now(),name:nm,city:$('cCity').value.trim(),state:$('cState').value.trim(),
+    target:parseFloat($('cTarget').value)||0,days:parseFloat($('cDays').value)||25,
+    bpt:parseFloat($('cBpt').value)||24,routes:parseFloat($('cRoutes').value)||0,
+    trays:parseFloat($('cTrays').value)||0});
+  store.set('gs_franchises',franchises);
+  $('cName').value='';$('cCity').value='';$('cState').value='';
+  fillPickers();renderMgmt();renderFV();renderPV();toast('Franchise created');
+}
+function editF(id,field,val){
+  var f=fran(id);if(!f)return;
+  f[field]=(field==='name'||field==='city'||field==='state')?val:(parseFloat(val)||0);
+  store.set('gs_franchises',franchises);fillPickers();renderFV();renderPV();
+}
+function delFranchise(id){
+  franchises=franchises.filter(function(f){return f.id!==id;});
+  store.set('gs_franchises',franchises);fillPickers();renderMgmt();renderFV();renderPV();
+}
+function renderMgmt(){
+  if(!franchises.length){$('mgmtOut').innerHTML='<div class="empty">No franchises yet. Create the first one above.</div>';return;}
+  var h='<table><thead><tr><th>Franchise</th><th class="r">Target</th><th class="r">Days</th>'+
+        '<th class="r">Bottles/tray</th><th class="r">Routes</th><th class="r">Multiplier</th>'+
+        '<th class="r">Trays owned</th><th class="r">Trays needed</th><th>Tray position</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<franchises.length;i++){var f=franchises[i];
+    var need=(f.target/(f.days||1)/(f.bpt||1))*(FACTORY_MULT+f.routes*PER_ROUTE);
+    var own=f.trays||0, d=own-need;
+    h+='<tr><td><b>'+esc(f.name)+'</b><div style="font-size:12px;color:var(--ink-3)">'+esc(f.city||'—')+'</div></td>'+
+      '<td class="r"><input type="number" value="'+f.target+'" onchange="editF(\''+f.id+'\',\'target\',this.value)"></td>'+
+      '<td class="r"><input type="number" value="'+f.days+'" onchange="editF(\''+f.id+'\',\'days\',this.value)"></td>'+
+      '<td class="r"><input type="number" value="'+f.bpt+'" onchange="editF(\''+f.id+'\',\'bpt\',this.value)"></td>'+
+      '<td class="r"><input type="number" value="'+f.routes+'" onchange="editF(\''+f.id+'\',\'routes\',this.value)"></td>'+
+      '<td class="r num">'+(Math.round((FACTORY_MULT+f.routes*PER_ROUTE)*100)/100)+'\u00d7</td>'+
+      '<td class="r"><input type="number" value="'+own+'" onchange="editF(\''+f.id+'\',\'trays\',this.value)"></td>'+
+      '<td class="r num">'+fmt(need)+'</td>'+
+      '<td>'+(own?(d<-0.5?'<span class="pill p-dev">Short '+fmt(Math.abs(d))+'</span>':'<span class="pill p-ok">Spare '+fmt(d)+'</span>'):'<span class="pill p-pen">Not set</span>')+'</td>'+
+      '<td class="r"><button class="btn ghost sm" onclick="delFranchise(\''+f.id+'\')">Remove</button></td></tr>';}
+  $('mgmtOut').innerHTML=h+'</tbody></table>';
+}
+
+/* ============ pickers ============ */
+function fillPickers(){
+  var a=$('fvPick'),cur=a.value;a.innerHTML='';
+  for(var i=0;i<franchises.length;i++){var o=document.createElement('option');
+    o.value=franchises[i].id;o.textContent=franchises[i].name+(franchises[i].city?' — '+franchises[i].city:'');a.appendChild(o);}
+  if(cur)a.value=cur;
+  var b=$('pvPick');
+  if(!b.options.length){
+    for(var j=0;j<PROCESSES.length;j++){
+      var op=document.createElement('option');op.value=PROCESSES[j].id;op.textContent=label(PROCESSES[j]);b.appendChild(op);
+    }
+  }
+}
+
+/* ============ tally + filter chips ============ */
+function tally(list){
+  var t={ok:0,dev:0,pending:0};
+  for(var i=0;i<list.length;i++)t[list[i]==='pending'?'pending':list[i]]++;
+  return t;
+}
+function tallyHTML(t,total){
+  return '<div class="tally">'+
+   '<div class="t"><div class="eyebrow">Total</div><div class="v">'+total+'</div></div>'+
+   '<div class="t ok"><div class="eyebrow">On target</div><div class="v">'+t.ok+'</div></div>'+
+   '<div class="t dev"><div class="eyebrow">Deviation</div><div class="v">'+t.dev+'</div></div>'+
+   '<div class="t pen"><div class="eyebrow">Not filled</div><div class="v">'+t.pending+'</div></div></div>';
+}
+function chipsHTML(cur,fn,t){
+  var opts=[['all','All',t.ok+t.dev+t.pending],['ok','On target',t.ok],['dev','Deviation',t.dev],['pending','Not filled',t.pending]];
+  var h='<div class="chips">';
+  for(var i=0;i<opts.length;i++){
+    h+='<button class="chip'+(cur===opts[i][0]?' on':'')+'" onclick="'+fn+'(\''+opts[i][0]+'\')">'+opts[i][1]+'<span class="c">'+opts[i][2]+'</span></button>';}
+  return h+'</div>';
+}
+function setFVFilter(v){fvFilter=v;renderFV();}
+function setPVFilter(v){pvFilter=v;renderPV();}
+
+/* ============ FRANCHISEE VIEW ============ */
+function renderFV(){
+  if(!franchises.length){$('fvOut').innerHTML='<div class="empty">Create a franchise first, on the Franchises tab.</div>';return;}
+  var fid=$('fvPick').value||franchises[0].id;$('fvPick').value=fid;
+
+  var sts={},arr=[];
+  for(var i=0;i<PROCESSES.length;i++){var st=statusOf(fid,PROCESSES[i].id);sts[PROCESSES[i].id]=st;arr.push(st);}
+  var t=tally(arr);
+
+  var list=[];
+  for(var j=0;j<PROCESSES.length;j++){
+    if(fvFilter==='all'||sts[PROCESSES[j].id]===fvFilter)list.push(PROCESSES[j]);
+  }
+  var valid=false;
+  for(var k=0;k<list.length;k++)if(list[k].id===fvSel)valid=true;
+  if(!valid)fvSel=list.length?list[0].id:null;
+
+  var h=tallyHTML(t,PROCESSES.length)+chipsHTML(fvFilter,'setFVFilter',t);
+  if(!list.length){$('fvOut').innerHTML=h+'<div class="empty">Nothing in this filter.</div>';return;}
+
+  var menu='',lastSec='';
+  for(var m=0;m<list.length;m++){
+    var p=list[m],s=sts[p.id];
+    if(p.sec!==lastSec){
+      menu+='<div class="sgroup">Checklist</div>';
+      lastSec=p.sec;
+    }
+    menu+='<button class="sitem'+(p.id===fvSel?' on':'')+'" onclick="pickFV(\''+p.id+'\')">'+
+      '<span class="dot dot-'+s+'" id="dot_si_'+p.id+'"></span>'+
+      '<span class="no">'+p.no+'</span>'+
+      '<span class="nm">'+esc(p.name)+'</span></button>';
+  }
+
+  var sel=proc(fvSel);
+  var right='<div class="dhead"><h3>'+esc(sel.name)+'</h3>'+
+    '<span id="pw_si_'+sel.id+'">'+pill(sts[sel.id])+'</span></div>'+detail(fid,sel.id);
+
+  $('fvOut').innerHTML=h+'<div class="split"><div class="side">'+menu+'</div><div class="detail">'+right+'</div></div>';
+}
+function pickFV(pid){fvSel=pid;renderFV();}
+
+/* ============ PROCESS VIEW — comparison table ============ */
+function stateOf(f){return (f.state&&f.state.trim())?f.state.trim():'State not set';}
+
+function rowData(f,pid){
+  if(pid==='A1'){
+    var e=getEntry(f.id,'A1'), m=model(f,e), own=f.trays||0;
+    return {cells:[fmt(m.totalTrays),own?fmt(own):'—',
+      own?((own-m.totalTrays>=0?'+':'')+fmt(own-m.totalTrays)):'—'],
+      neg:own?(own-m.totalTrays<-0.5):false};
+  }
+  if(pid==='A2'){
+    var e2=getEntry(f.id,'A2'), r=rawModel(f,e2);
+    return {cells:[d1(r.batchReq),r.allFilled?d1(r.batchAct):'—',
+      fmt(r.sleeveReq),r.hasSleeve?fmt(r.sleeveAct):'—'],
+      neg:(r.allFilled&&r.batchGap<-0.01)||(r.hasSleeve&&r.sleeveGap<-0.5)};
+  }
+  var c=spareCounts(f.id);
+  return {cells:[String(spareItems.length),String(c.full),String(c.short),String(c.pieces)],neg:c.short>0};
+}
+function headsFor(pid){
+  if(pid==='A1')return ['Trays required','Trays in factory','Difference'];
+  if(pid==='A2')return ['Batches required','Batches present','Sleeve required','Sleeve present'];
+  return ['Parts in list','Held in full','Short parts','Pieces short'];
+}
+
+function renderPV(){
+  if(!franchises.length){$('pvOut').innerHTML='<div class="empty">Create a franchise first, on the Franchises tab.</div>';return;}
+  var pid=$('pvPick').value||PROCESSES[0].id;$('pvPick').value=pid;
+  var p=proc(pid);
+
+  var sts={},arr=[];
+  for(var i=0;i<franchises.length;i++){var st=statusOf(franchises[i].id,pid);sts[franchises[i].id]=st;arr.push(st);}
+  var t=tally(arr);
+
+  var list=[];
+  for(var j=0;j<franchises.length;j++)
+    if(pvFilter==='all'||sts[franchises[j].id]===pvFilter)list.push(franchises[j]);
+  list.sort(function(x,y){
+    var sx=stateOf(x), sy=stateOf(y);
+    return sx===sy ? (x.name>y.name?1:-1) : (sx>sy?1:-1);
+  });
+
+  var h='<div class="meta"><div><b>Deadline</b>'+esc(p.dl)+'</div><div><b>Escalation</b>'+esc(p.esc)+'</div></div>';
+  h+=tallyHTML(t,franchises.length)+chipsHTML(pvFilter,'setPVFilter',t);
+  if(!list.length){$('pvOut').innerHTML=h+'<div class="empty">Nothing in this filter.</div>';return;}
+
+  var heads=headsFor(pid);
+  h+='<table><thead><tr><th>Franchise</th>';
+  for(var k=0;k<heads.length;k++)h+='<th class="r">'+heads[k]+'</th>';
+  h+='<th>Status</th></tr></thead><tbody>';
+
+  var lastState='';
+  for(var m2=0;m2<list.length;m2++){
+    var f=list[m2], st2=stateOf(f), d=rowData(f,pid);
+    if(st2!==lastState){
+      h+='<tr class="group"><td colspan="'+(heads.length+2)+'">'+esc(st2)+'</td></tr>';
+      lastState=st2;
+    }
+    h+='<tr><td><b>'+esc(f.name)+'</b><div style="font-size:12px;color:var(--ink-3)">'+esc(f.city||'—')+'</div></td>';
+    for(var c=0;c<d.cells.length;c++){
+      var last=(c===d.cells.length-1);
+      h+='<td class="r num'+(last&&d.neg?' dn':'')+'">'+d.cells[c]+'</td>';
+    }
+    h+='<td>'+pill(sts[f.id])+'</td></tr>';
+  }
+  $('pvOut').innerHTML=h+'</tbody></table>';
+}
+
+/* ============ DASHBOARD ============ */
+function renderDash(){
+  if(!franchises.length){$('dashOut').innerHTML='<div class="card"><div class="empty">Create a franchise first, on the Franchises tab.</div></div>';return;}
+
+  var byState={}, clear=0, flagged=0, procT={A1:{ok:0,dev:0,pending:0},A2:{ok:0,dev:0,pending:0},A3:{ok:0,dev:0,pending:0}};
+  var problems=[];
+  for(var i=0;i<franchises.length;i++){
+    var f=franchises[i], st=stateOf(f);
+    if(!byState[st])byState[st]={n:0,clear:0,bad:0,A1:0,A2:0,A3:0};
+    byState[st].n++;
+    var bad=false;
+    for(var q=0;q<PROCESSES.length;q++){
+      var pid=PROCESSES[q].id, s=statusOf(f.id,pid);
+      procT[pid][s]++;
+      if(s!=='ok'){bad=true;byState[st][pid]++;}
+    }
+    if(bad){flagged++;byState[st].bad++;
+      var fnd=findings(f.id).filter(function(x){return x.t!=='Remarks'&&x.t!=='Action plan noted';});
+      problems.push({f:f,state:st,n:fnd.length,list:fnd});
+    }
+    else{clear++;byState[st].clear++;}
+  }
+
+  var h='<div class="card"><div class="eyebrow">'+esc(month||'—')+'</div><h2>Screening overview</h2>'+
+    '<div class="tally" style="margin-top:14px">'+
+    '<div class="t"><div class="eyebrow">Franchises</div><div class="v">'+franchises.length+'</div></div>'+
+    '<div class="t ok"><div class="eyebrow">Clear</div><div class="v">'+clear+'</div></div>'+
+    '<div class="t dev"><div class="eyebrow">Has problems</div><div class="v">'+flagged+'</div></div>'+
+    '<div class="t"><div class="eyebrow">States</div><div class="v">'+Object.keys(byState).length+'</div></div></div></div>';
+
+  /* state-wise */
+  var keys=Object.keys(byState).sort();
+  h+='<div class="card"><div class="eyebrow">State-wise</div><h2>Where the problems are</h2>'+
+     '<p class="hint">Counts show how many units in each state are not clear on that check.</p>'+
+     '<table><thead><tr><th>State</th><th class="r">Units</th><th class="r">Clear</th><th class="r">Problem</th>'+
+     '<th class="r">Stock</th><th class="r">Raw material</th><th class="r">Spares</th></tr></thead><tbody>';
+  for(var k=0;k<keys.length;k++){var b=byState[keys[k]];
+    h+='<tr><td><b>'+esc(keys[k])+'</b></td><td class="r num">'+b.n+'</td>'+
+      '<td class="r num dp">'+b.clear+'</td><td class="r num '+(b.bad?'dn':'')+'">'+b.bad+'</td>'+
+      '<td class="r num'+(b.A1?' dn':'')+'">'+b.A1+'</td>'+
+      '<td class="r num'+(b.A2?' dn':'')+'">'+b.A2+'</td>'+
+      '<td class="r num'+(b.A3?' dn':'')+'">'+b.A3+'</td></tr>';}
+  h+='</tbody></table></div>';
+
+  /* process-wise */
+  h+='<div class="card"><div class="eyebrow">Process-wise</div><h2>How each check is holding up</h2>'+
+     '<table><thead><tr><th>Check</th><th class="r">On target</th><th class="r">Deviation</th><th class="r">Not filled</th></tr></thead><tbody>';
+  for(var z=0;z<PROCESSES.length;z++){var pp=PROCESSES[z], c=procT[pp.id];
+    h+='<tr><td><b>'+esc(pp.name)+'</b></td><td class="r num dp">'+c.ok+'</td>'+
+      '<td class="r num'+(c.dev?' dn':'')+'">'+c.dev+'</td><td class="r num">'+c.pending+'</td></tr>';}
+  h+='</tbody></table></div>';
+
+  /* franchise-wise problem list */
+  h+='<div class="card"><div class="eyebrow">Franchise-wise</div><h2>Units needing action</h2>';
+  if(!problems.length){
+    h+='<div class="verdict v-ok">Every franchise is clear for '+esc(month||'this month')+'.</div>';
+  }else{
+    problems.sort(function(x,y){return x.state===y.state?(y.n-x.n):(x.state>y.state?1:-1);});
+    h+='<table><thead><tr><th>Franchise</th><th>State</th><th class="r">Points to fix</th><th>Main problems</th></tr></thead><tbody>';
+    var ls='';
+    for(var w=0;w<problems.length;w++){
+      var pr=problems[w];
+      if(pr.state!==ls){h+='<tr class="group"><td colspan="4">'+esc(pr.state)+'</td></tr>';ls=pr.state;}
+      var top=[];
+      for(var y=0;y<pr.list.length&&y<3;y++)top.push(pr.list[y].t);
+      h+='<tr><td><b>'+esc(pr.f.name)+'</b><div style="font-size:12px;color:var(--ink-3)">'+esc(pr.f.city||'—')+'</div></td>'+
+        '<td>'+esc(pr.state)+'</td><td class="r num dn">'+pr.n+'</td>'+
+        '<td style="font-size:13px;color:var(--ink-2)">'+esc(top.join(' · '))+(pr.list.length>3?' …':'')+'</td></tr>';
+    }
+    h+='</tbody></table>';
+  }
+  h+='</div>';
+
+  $('dashOut').innerHTML=h;
+}
+
+/* ============ DETAIL PANEL (shared by both views) ============ */
+function detail(fid,pid){
+  var p=proc(pid),f=fran(fid),e=getEntry(fid,pid);
+  var h='<div class="meta"><div><b>Franchise</b>'+esc(f.name)+'</div>'+
+        '<div><b>Month</b>'+esc(month||'—')+'</div>'+
+        '<div><b>Deadline</b>'+esc(p.dl)+'</div><div><b>Escalation</b>'+esc(p.esc)+'</div></div>';
+  if(p.type==='stock')h+=stockPanel(f,e);
+  else if(p.type==='raw')h+=rawPanel(f,e);
+  else if(p.type==='spares')h+=sparesPanel(f,e);
+  else h+=genericPanel(f,p,e);
+  return h;
+}
+
+function genericPanel(f,p,e){
+  return '<div class="grid">'+
+   '<div><label>Status</label><select onchange="saveGeneric(\''+f.id+'\',\''+p.id+'\',\'status\',this.value)">'+
+     '<option value="pending"'+(e.status==='pending'?' selected':'')+'>Not filled</option>'+
+     '<option value="ok"'+(e.status==='ok'?' selected':'')+'>On target</option>'+
+     '<option value="dev"'+(e.status==='dev'?' selected':'')+'>Deviation</option></select></div>'+
+   '<div><label>Responsible person</label><input value="'+esc(e.owner)+'" placeholder="Who is following up" '+
+     'onchange="saveGeneric(\''+f.id+'\',\''+p.id+'\',\'owner\',this.value)"></div>'+
+   '<div style="grid-column:1/-1"><label>Remarks</label><textarea placeholder="What happened, action taken, current position" '+
+     'onchange="saveGeneric(\''+f.id+'\',\''+p.id+'\',\'remarks\',this.value)">'+esc(e.remarks)+'</textarea></div>'+
+   '</div><p class="hint" style="margin:12px 0 0">Detailed logic for this process is not set yet — it saves as a plain status and note for now.</p>';
+}
+
+function saveGeneric(fid,pid,field,val){
+  var e=getEntry(fid,pid);e[field]=val;e.updatedAt=new Date().toISOString();
+  setEntry(fid,pid,e);
+  rerenderOpen();
+}
+
+function stockPanel(f,e){
+  var m=model(f,e),a=e.actual||{};
+  var segs=[{c:'s1',l:'Vehicle',mu:1.4},{c:'s2',l:'Empty',mu:1.2},{c:'s3',l:'2-day stock',mu:2.0},
+            {c:'s4',l:'Market · '+f.routes+' routes',mu:m.marketMult}];
+  var bar='';
+  for(var i=0;i<segs.length;i++){var s=segs[i];if(s.mu<=0)continue;
+    bar+='<div class="lseg '+s.c+'" style="flex:0 0 '+((s.mu/(m.totalMult||1))*100)+'%"><b>'+
+      (Math.round(s.mu*10)/10)+'\u00d7</b><span>'+s.l+'</span></div>';}
+
+  var h='<div class="grid" style="margin-bottom:16px">'+
+    '<div><label>Monthly target for this month</label><input type="number" value="'+(e.target!==''&&e.target!=null?e.target:f.target)+
+      '" onchange="saveStock(\''+f.id+'\',\'target\',this.value)"></div>'+
+    '<div><label>Working days</label><input type="number" value="'+(e.days!==''&&e.days!=null?e.days:f.days)+
+      '" onchange="saveStock(\''+f.id+'\',\'days\',this.value)"></div>'+
+    '<div><label>Daily bottle target</label><input value="'+fmt(m.dailyBottles)+'" readonly></div>'+
+    '<div><label>Daily tray movement</label><input value="'+fmt(m.dailyTrays)+'" readonly></div></div>';
+
+  h+='<div class="lbar">'+bar+'</div><div class="ltot"><span>Total holding required</span>'+
+     '<span><b>'+fmt(m.totalTrays)+'</b> trays &middot; <span class="num">'+(Math.round(m.totalMult*100)/100)+'\u00d7</span> of daily movement</span></div>';
+
+  var ownT=f.trays||0, dT=ownT-m.totalTrays, isShort=dT<-0.5;
+  h+='<div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin:0 0 18px">'+
+     '<div class="t"><div class="eyebrow">Trays required</div><div class="v">'+fmt(m.totalTrays)+'</div></div>'+
+     '<div class="t"><div class="eyebrow">Trays in factory</div><div class="v">'+(ownT?fmt(ownT):'—')+'</div></div>'+
+     '<div class="t '+(ownT?(isShort?'dev':'ok'):'pen')+'" style="grid-column:span 2">'+
+       '<div class="eyebrow">'+(ownT?(isShort?'Shortfall — arrange more trays':'Extra trays available'):'Tray count not set')+'</div>'+
+       '<div class="v">'+(ownT?(dT>=0?'+':'\u2212')+fmt(Math.abs(dT))+' trays':'—')+'</div></div></div>';
+
+  h+='<table><thead><tr><th>Holding point</th><th class="r">Multiplier</th><th class="r">Required</th>'+
+     '<th class="r">Actual</th><th class="r">Difference</th><th>Status</th></tr></thead><tbody>';
+  h+='<tr class="group"><td colspan="6">Factory — 4.6&times;</td></tr>';
+  var actTotal=0,allFilled=true;
+  function ln(k,name,mult,req,note){
+    var v=(a[k]===undefined||a[k]===null)?'':a[k];
+    var has=(v!==''&&!isNaN(parseFloat(v)));
+    if(has)actTotal+=parseFloat(v);else allFilled=false;
+    var d=has?parseFloat(v)-req:0;
+    return '<tr><td><b>'+name+'</b><div style="font-size:12px;color:var(--ink-3)">'+note+'</div></td>'+
+      '<td class="r num">'+(Math.round(mult*100)/100)+'\u00d7</td><td class="r num">'+fmt(req)+'</td>'+
+      '<td class="r"><input type="number" value="'+esc(v)+'" placeholder="0" onchange="saveActual(\''+f.id+'\',\''+k+'\',this.value)"></td>'+
+      '<td class="r num '+(d<0?'dn':'dp')+'">'+(has?(d>=0?'+':'')+fmt(d):'—')+'</td>'+
+      '<td>'+(has?(d<-0.5?'<span class="pill p-dev">Shortage</span>':'<span class="pill p-ok">On target</span>'):'')+'</td></tr>';
+  }
+  for(var j=0;j<FACTORY.length;j++)h+=ln(FACTORY[j].key,FACTORY[j].name,FACTORY[j].mult,m.dailyTrays*FACTORY[j].mult,FACTORY[j].note);
+  h+='<tr class="group"><td colspan="6">Market — '+f.routes+' routes &times; 1.5</td></tr>';
+  h+=ln('market','Route stock in market',m.marketMult,m.marketTrays,'1.5&times; of movement held per route');
+  var gap=actTotal-m.totalTrays;
+  h+='<tr class="total"><td>Total tray holding</td><td class="r num">'+(Math.round(m.totalMult*100)/100)+'\u00d7</td>'+
+     '<td class="r num">'+fmt(m.totalTrays)+'</td><td class="r num">'+fmt(actTotal)+'</td>'+
+     '<td class="r num '+(gap<0?'dn':'dp')+'">'+(allFilled?(gap>=0?'+':'')+fmt(gap):'—')+'</td>'+
+     '<td>'+(allFilled?(gap<-0.5?'<span class="pill p-dev">Shortage</span>':'<span class="pill p-ok">On target</span>'):'<span class="pill p-pen">Not filled</span>')+'</td></tr>';
+  h+='</tbody></table>';
+
+  var own=f.trays||0, od=own-m.totalTrays, hasOw=own>0;
+  var shortBy=Math.ceil(Math.abs(od));
+  h+='<div class="eyebrow" style="margin:20px 0 8px">Tray asset position</div>'+
+     '<table><thead><tr><th>Factory tray stock</th><th class="r">Bottles it can hold</th>'+
+     '<th class="r">Trays needed</th><th class="r">Surplus / shortfall</th><th>Position</th></tr></thead><tbody>'+
+     '<tr><td><b>'+fmt(own)+' trays owned</b>'+
+     '<div style="font-size:12px;color:var(--ink-3)">Fixed asset — change it on the Franchises tab</div></td>'+
+     '<td class="r num">'+fmt(own*(f.bpt||0))+'</td>'+
+     '<td class="r num">'+fmt(m.totalTrays)+'</td>'+
+     '<td class="r num '+(od<0?'dn':'dp')+'">'+(hasOw?(od>=0?'+':'')+fmt(od):'—')+'</td>'+
+     '<td>'+(hasOw?(od<-0.5?'<span class="pill p-dev">Short by '+fmt(shortBy)+'</span>':'<span class="pill p-ok">Sufficient</span>'):'<span class="pill p-pen">Not set</span>')+'</td></tr>'+
+     '</tbody></table>';
+
+  if(hasOw&&od<-0.5){
+    h+='<div style="margin-top:14px;background:var(--red-soft);border-radius:8px;padding:14px 16px">'+
+       '<div style="font-weight:800;color:var(--red);margin-bottom:4px">Arrange '+fmt(shortBy)+' more trays</div>'+
+       '<div style="font-size:13px;color:var(--ink-2);margin-bottom:10px">This factory cannot hold the stock its target demands. '+
+       'Escalation: '+esc(proc('A1').esc)+'</div>'+
+       '<label>Action plan</label><textarea placeholder="Trays to be purchased, indent raised with Purchase team, expected date" '+
+       'onchange="saveStock(\''+f.id+'\',\'actionPlan\',this.value)">'+esc(e.actionPlan||'')+'</textarea></div>';
+  }
+
+  h+='<div style="margin-top:16px"><label>Remarks</label><textarea placeholder="Reason for shortage, action taken, who is following up" '+
+     'onchange="saveStock(\''+f.id+'\',\'remarks\',this.value)">'+esc(e.remarks)+'</textarea></div>';
+  return h;
+}
+
+/* ============ RAW MATERIALS (A2) ============ */
+function rawModel(f,e){
+  var target=(e.target!==''&&e.target!=null)?parseFloat(e.target):f.target;
+  target=isNaN(target)?0:target;
+  var bs=parseFloat(e.batchSize)||BATCH_BOTTLES;
+  var fl=e.flavours||[];
+  var batchReq=bs>0?target/bs:0;
+  var batchAct=0, allFilled=fl.length>0;
+  for(var i=0;i<fl.length;i++){
+    var v=fl[i].batches;
+    if(v!==''&&v!=null&&!isNaN(parseFloat(v)))batchAct+=parseFloat(v);
+    else allFilled=false;
+  }
+  var sv=e.sleeve, hasSleeve=(sv!==''&&sv!=null&&!isNaN(parseFloat(sv)));
+  var sleeveAct=hasSleeve?parseFloat(sv):0;
+  return {target:target,batchSize:bs,flavours:fl,batchReq:batchReq,batchAct:batchAct,
+    batchGap:batchAct-batchReq,allFilled:allFilled,hasSleeve:hasSleeve,
+    sleeveReq:target,sleeveAct:sleeveAct,sleeveGap:sleeveAct-target};
+}
+function d1(x){return (Math.round(x*10)/10).toLocaleString('en-IN');}
+
+function rawPanel(f,e){
+  var r=rawModel(f,e);
+  var h='<div class="grid" style="margin-bottom:16px">'+
+    '<div><label>Monthly target (bottles)</label><input type="number" value="'+(e.target!==''&&e.target!=null?e.target:f.target)+
+      '" onchange="saveRaw(\''+f.id+'\',\'target\',this.value,true)"></div>'+
+    '<div><label>Bottles per batch</label><input type="number" value="'+r.batchSize+
+      '" onchange="saveRaw(\''+f.id+'\',\'batchSize\',this.value,true)"></div>'+
+    '<div><label>Flavour batches required</label><input value="'+d1(r.batchReq)+' batches" readonly></div>'+
+    '<div><label>Top sleeve required</label><input value="'+fmt(r.sleeveReq)+'" readonly></div></div>';
+
+  /* --- flavours --- */
+  h+='<div class="eyebrow" style="margin:4px 0 8px">Flavour batches &mdash; '+fmt(r.target)+' &divide; '+fmt(r.batchSize)+' = '+d1(r.batchReq)+' batches needed</div>';
+  h+='<table><thead><tr><th>Flavour</th><th class="r">Batches available</th><th class="r">Bottles</th><th></th></tr></thead><tbody id="flBody">';
+  if(!r.flavours.length){
+    h+='<tr><td colspan="4" class="empty" style="padding:22px">No flavours added yet. Add each flavour this unit stocks.</td></tr>';
+  }
+  for(var i=0;i<r.flavours.length;i++){
+    var fv=r.flavours[i], b=(fv.batches===''||fv.batches==null)?'':fv.batches;
+    var bn=parseFloat(b); if(isNaN(bn))bn=0;
+    h+='<tr><td><input value="'+esc(fv.name||'')+'" placeholder="Flavour name" '+
+        'onchange="saveFlavour(\''+f.id+'\','+i+',\'name\',this.value)"></td>'+
+      '<td class="r"><input type="number" value="'+esc(b)+'" placeholder="0" '+
+        'onchange="saveFlavour(\''+f.id+'\','+i+',\'batches\',this.value)"></td>'+
+      '<td class="r num">'+fmt(bn*r.batchSize)+'</td>'+
+      '<td class="r"><button class="btn ghost sm" onclick="delFlavour(\''+f.id+'\','+i+')">Remove</button></td></tr>';
+  }
+  h+='<tr class="total"><td>Total batches in factory</td><td class="r num" id="rawTot">'+d1(r.batchAct)+'</td>'+
+     '<td class="r num">'+fmt(r.batchAct*r.batchSize)+'</td><td></td></tr>';
+  h+='</tbody></table>';
+  h+='<div style="margin-top:12px"><button class="btn ghost sm" onclick="addFlavour(\''+f.id+'\')">Add flavour</button></div>';
+
+  h+='<div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin:16px 0 4px" id="rawCards">'+rawCards(r)+'</div>';
+
+  /* --- top sleeve --- */
+  h+='<div class="eyebrow" style="margin:22px 0 8px">Top sleeve</div>';
+  var sd=r.sleeveGap;
+  h+='<table><thead><tr><th>Material</th><th class="r">Required</th><th class="r">Available</th>'+
+     '<th class="r">Difference</th><th>Status</th></tr></thead><tbody><tr>'+
+     '<td><b>Top sleeve</b><div style="font-size:12px;color:var(--ink-3)">One per bottle &mdash; minimum equals the monthly target</div></td>'+
+     '<td class="r num">'+fmt(r.sleeveReq)+'</td>'+
+     '<td class="r"><input type="number" value="'+esc(e.sleeve==null?'':e.sleeve)+'" placeholder="0" '+
+       'onchange="saveRaw(\''+f.id+'\',\'sleeve\',this.value,true)"></td>'+
+     '<td class="r num '+(sd<0?'dn':'dp')+'">'+(r.hasSleeve?(sd>=0?'+':'')+fmt(sd):'—')+'</td>'+
+     '<td>'+(r.hasSleeve?(sd<-0.5?'<span class="pill p-dev">Short by '+fmt(Math.abs(sd))+'</span>':'<span class="pill p-ok">Sufficient</span>'):'<span class="pill p-pen">Not filled</span>')+'</td>'+
+     '</tr></tbody></table>';
+
+  h+='<div style="margin-top:16px"><label>Remarks</label><textarea placeholder="Indent raised, supplier, expected date" '+
+     'onchange="saveRaw(\''+f.id+'\',\'remarks\',this.value,false)">'+esc(e.remarks||'')+'</textarea></div>';
+  return h;
+}
+
+function rawCards(r){
+  var g=r.batchGap, ok=g>=-0.01;
+  return '<div class="t"><div class="eyebrow">Batches required</div><div class="v">'+d1(r.batchReq)+'</div></div>'+
+    '<div class="t"><div class="eyebrow">Batches available</div><div class="v">'+d1(r.batchAct)+'</div></div>'+
+    '<div class="t '+(r.allFilled?(ok?'ok':'dev'):'pen')+'" style="grid-column:span 2">'+
+    '<div class="eyebrow">'+(r.allFilled?(ok?'Extra flavour stock':'Flavour shortfall — arrange more'):'Fill every flavour row')+'</div>'+
+    '<div class="v">'+(r.allFilled?(g>=0?'+':'\u2212')+d1(Math.abs(g))+' batches':'—')+'</div></div>';
+}
+
+function refreshRaw(fid){
+  var f=fran(fid), e=getEntry(fid,'A2'), r=rawModel(f,e);
+  var tot=$('rawTot'); if(tot)tot.textContent=d1(r.batchAct);
+  var cards=$('rawCards'); if(cards)cards.innerHTML=rawCards(r);
+  repill(fid,'A2');
+}
+function saveRaw(fid,field,val,rerender){
+  var e=getEntry(fid,'A2'); e[field]=val; e.updatedAt=new Date().toISOString();
+  setEntry(fid,'A2',e);
+  if(rerender)rerenderOpen(); else repill(fid,'A2');
+}
+function addFlavour(fid){
+  var e=getEntry(fid,'A2'); e.flavours=e.flavours||[];
+  e.flavours.push({name:'',batches:''});
+  setEntry(fid,'A2',e); rerenderOpen();
+}
+function delFlavour(fid,i){
+  var e=getEntry(fid,'A2'); e.flavours=e.flavours||[];
+  e.flavours.splice(i,1); setEntry(fid,'A2',e); rerenderOpen();
+}
+function saveFlavour(fid,i,field,val){
+  var e=getEntry(fid,'A2'); e.flavours=e.flavours||[];
+  if(!e.flavours[i])return;
+  e.flavours[i][field]=val; e.updatedAt=new Date().toISOString();
+  setEntry(fid,'A2',e);
+  if(field==='batches')refreshRaw(fid); else repill(fid,'A2');
+}
+
+function repill(fid,pid){
+  var s=statusOf(fid,pid), id=(activePage==='p-fv')?pid:fid;
+  var w=$('pw_si_'+id); if(w)w.innerHTML=pill(s);
+  var d=$('dot_si_'+id); if(d)d.className='dot dot-'+s;
+}
+function rerenderOpen(){
+  if(activePage==='p-fv')renderFV(); else renderPV();
+}
+
+function saveStock(fid,field,val){
+  var e=getEntry(fid,'A1');e[field]=val;e.updatedAt=new Date().toISOString();
+  setEntry(fid,'A1',e);
+  rerenderOpen();
+}
+function saveActual(fid,k,val){
+  var e=getEntry(fid,'A1');e.actual=e.actual||{};e.actual[k]=val;e.updatedAt=new Date().toISOString();
+  setEntry(fid,'A1',e);
+  rerenderOpen();
+}
+
+/* ============ SPARES CHECKLIST (A3) ============ */
+function addSpare(){
+  var nm=$('spName').value.trim();
+  if(!nm){toast('Enter a part description');return;}
+  spareItems.push({id:'s'+Date.now(),name:nm,qty:parseFloat($('spQty').value)||1,
+    vendor:($('spVendor').value||'').trim()||'Not assigned'});
+  store.set('gs_spares_v2',spareItems);
+  $('spName').value='';$('spQty').value='1';
+  renderSpares();renderDash();renderFV();renderPV();toast('Part added');
+}
+function delSpare(id){
+  spareItems=spareItems.filter(function(x){return x.id!==id;});
+  store.set('gs_spares_v2',spareItems);renderSpares();renderDash();renderFV();renderPV();
+}
+function editSpare(id,field,val){
+  for(var i=0;i<spareItems.length;i++)if(spareItems[i].id===id)
+    spareItems[i][field]=(field==='qty')?(parseFloat(val)||0):val;
+  store.set('gs_spares_v2',spareItems);renderDash();renderFV();renderPV();
+}
+function vendorsOf(){
+  var seen={},out=[];
+  for(var i=0;i<spareItems.length;i++){
+    var v=spareItems[i].vendor||'Not assigned';
+    if(!seen[v]){seen[v]=1;out.push(v);}
+  }
+  out.sort();return out;
+}
+function filterRows(prefix,txt){
+  var t=(txt||'').toLowerCase(), rows=document.querySelectorAll('tr[data-sk]');
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    if(r.id.indexOf(prefix)!==0)continue;
+    r.style.display=(!t||r.getAttribute('data-sk').indexOf(t)>-1)?'':'none';
+  }
+  var g=document.querySelectorAll('tr[data-vgroup]');
+  for(var j=0;j<g.length;j++)g[j].style.display=t?'none':'';
+}
+
+/* ---- master editor ---- */
+function renderSpares(){
+  var vl=vendorsOf(), vs='<option value="">Select vendor</option>';
+  for(var v=0;v<vl.length;v++)vs+='<option>'+esc(vl[v])+'</option>';
+  var sel=$('spVendor'); if(sel)sel.innerHTML=vs;
+
+  if(!spareItems.length){$('spOut').innerHTML='<div class="empty">No parts in the list yet.</div>';return;}
+  var tot=0;
+  for(var q=0;q<spareItems.length;q++)tot+=(spareItems[q].qty||0);
+  var h='<div class="pickbar"><div><label>Search</label>'+
+    '<input class="srch" placeholder="Part or vendor" oninput="filterRows(\'ms_\',this.value)"></div>'+
+    '<div style="flex:none;padding-bottom:9px;color:var(--ink-3);font-size:13px">'+
+    spareItems.length+' parts · '+fmt(tot)+' pieces · '+vl.length+' vendors</div></div>';
+  h+='<table><thead><tr><th style="width:40px">#</th><th>Part description</th>'+
+     '<th class="r" style="width:110px">Qty needed</th><th style="width:190px">Vendor</th><th style="width:90px"></th></tr></thead><tbody>';
+  for(var i=0;i<spareItems.length;i++){var it=spareItems[i];
+    h+='<tr id="ms_'+it.id+'" data-sk="'+esc((it.name+' '+(it.vendor||'')).toLowerCase())+'">'+
+      '<td class="num">'+(i+1)+'</td>'+
+      '<td><input value="'+esc(it.name)+'" onchange="editSpare(\''+it.id+'\',\'name\',this.value)"></td>'+
+      '<td class="r"><input type="number" value="'+(it.qty||0)+'" onchange="editSpare(\''+it.id+'\',\'qty\',this.value)"></td>'+
+      '<td><input value="'+esc(it.vendor||'')+'" onchange="editSpare(\''+it.id+'\',\'vendor\',this.value)"></td>'+
+      '<td class="r"><button class="btn ghost sm" onclick="delSpare(\''+it.id+'\')">Remove</button></td></tr>';}
+  $('spOut').innerHTML=h+'</tbody></table>';
+}
+
+/* ---- counts ---- */
+function spareCounts(fid){
+  var q=(getEntry(fid,'A3').qty)||{}, c={full:0,short:0,un:0,pieces:0,needed:0,held:0};
+  for(var i=0;i<spareItems.length;i++){
+    var it=spareItems[i], need=it.qty||0, v=q[it.id];
+    c.needed+=need;
+    if(v===''||v==null||isNaN(parseFloat(v))){c.un++;continue;}
+    var av=parseFloat(v); c.held+=av;
+    if(av<need){c.short++;c.pieces+=(need-av);}else c.full++;
+  }
+  return c;
+}
+function spareCards(fid){
+  var c=spareCounts(fid);
+  return '<div class="t"><div class="eyebrow">Parts in list</div><div class="v">'+spareItems.length+'</div></div>'+
+    '<div class="t ok"><div class="eyebrow">Held in full</div><div class="v">'+c.full+'</div></div>'+
+    '<div class="t dev"><div class="eyebrow">Short parts</div><div class="v">'+c.short+'</div></div>'+
+    '<div class="t dev"><div class="eyebrow">Pieces to arrange</div><div class="v">'+fmt(c.pieces)+'</div></div>'+
+    '<div class="t pen"><div class="eyebrow">Not checked</div><div class="v">'+c.un+'</div></div>';
+}
+
+/* ---- per-franchise checklist ---- */
+function sparesPanel(f,e){
+  if(!spareItems.length)
+    return '<div class="empty">No spares list set up. Add parts on the Franchises tab.</div>';
+  var q=e.qty||{};
+  var h='<div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));margin-bottom:14px" id="spCards">'+spareCards(f.id)+'</div>';
+  h+='<div class="pickbar">'+
+    '<div><label>Search part or vendor</label><input class="srch" placeholder="e.g. filling valve, soda hub" oninput="filterRows(\'ck_\',this.value)"></div>'+
+    '<button class="btn ghost sm" onclick="fillAll(\''+f.id+'\')">All held in full</button>'+
+    '<button class="btn ghost sm" onclick="zeroAll(\''+f.id+'\')">All nil</button>'+
+    '<button class="btn ghost sm" onclick="clearAll(\''+f.id+'\')">Clear</button></div>'+
+    '<p class="hint">Fastest way: press &ldquo;All held in full&rdquo;, then correct only the parts that are short.</p>';
+
+  var order=vendorsOf(), byV={};
+  for(var i=0;i<spareItems.length;i++){
+    var it=spareItems[i], v=it.vendor||'Not assigned';
+    if(!byV[v])byV[v]=[];byV[v].push(it);
+  }
+  h+='<table><thead><tr><th style="width:38px">#</th><th>Part description</th>'+
+     '<th class="r" style="width:90px">Needed</th><th class="r" style="width:110px">At factory</th>'+
+     '<th class="r" style="width:90px">Short by</th><th style="width:110px">Status</th></tr></thead><tbody>';
+  var n=0;
+  for(var g=0;g<order.length;g++){
+    var vn=order[g], items=byV[vn]||[], vneed=0;
+    for(var x=0;x<items.length;x++)vneed+=(items[x].qty||0);
+    h+='<tr class="group" data-vgroup="1"><td colspan="6">'+esc(vn)+' &mdash; '+items.length+
+       ' parts, '+fmt(vneed)+' pieces</td></tr>';
+    for(var j=0;j<items.length;j++){
+      var it2=items[j], need=it2.qty||0, val=(q[it2.id]==null?'':q[it2.id]); n++;
+      h+='<tr id="ck_'+it2.id+'" data-sk="'+esc((it2.name+' '+vn).toLowerCase())+'">'+
+        '<td class="num">'+n+'</td><td><b>'+esc(it2.name)+'</b></td>'+
+        '<td class="r num">'+fmt(need)+'</td>'+
+        '<td class="r"><input type="number" id="qi_'+it2.id+'" value="'+esc(val)+'" placeholder="0" min="0" '+
+          'onchange="saveQty(\''+f.id+'\',\''+it2.id+'\',this.value)"></td>'+
+        '<td class="r num" id="qs_'+it2.id+'">'+rowShort(need,val)+'</td>'+
+        '<td id="qp_'+it2.id+'">'+rowPill(need,val)+'</td></tr>';
+    }
+  }
+  h+='</tbody></table>';
+  h+='<div style="margin-top:16px"><label>Remarks</label><textarea placeholder="What the franchisee has committed to arrange, by when" '+
+     'onchange="saveSpares(\''+f.id+'\',\'remarks\',this.value)">'+esc(e.remarks||'')+'</textarea></div>';
+  return h;
+}
+function rowShort(need,val){
+  if(val===''||val==null||isNaN(parseFloat(val)))return '—';
+  var d=need-parseFloat(val);
+  return d>0?'<span class="dn">'+fmt(d)+'</span>':'<span class="dp">0</span>';
+}
+function rowPill(need,val){
+  if(val===''||val==null||isNaN(parseFloat(val)))return '<span class="pill p-pen">Not checked</span>';
+  return parseFloat(val)<need?'<span class="pill p-dev">Short</span>':'<span class="pill p-ok">In full</span>';
+}
+function paintQty(fid,id){
+  var it=null;
+  for(var i=0;i<spareItems.length;i++)if(spareItems[i].id===id)it=spareItems[i];
+  if(!it)return;
+  var val=(getEntry(fid,'A3').qty||{})[id];
+  if(val==null)val='';
+  var inp=$('qi_'+id); if(inp&&inp.value!==String(val))inp.value=val;
+  var sc=$('qs_'+id); if(sc)sc.innerHTML=rowShort(it.qty||0,val);
+  var pc=$('qp_'+id); if(pc)pc.innerHTML=rowPill(it.qty||0,val);
+}
+function afterQty(fid){
+  var c=$('spCards'); if(c)c.innerHTML=spareCards(fid);
+  repill(fid,'A3');
+}
+function saveQty(fid,id,val){
+  var e=getEntry(fid,'A3');e.qty=e.qty||{};e.qty[id]=val;
+  e.updatedAt=new Date().toISOString();setEntry(fid,'A3',e);
+  paintQty(fid,id);afterQty(fid);
+}
+function bulkQty(fid,fn){
+  var e=getEntry(fid,'A3');e.qty=e.qty||{};
+  for(var i=0;i<spareItems.length;i++)e.qty[spareItems[i].id]=fn(spareItems[i]);
+  e.updatedAt=new Date().toISOString();setEntry(fid,'A3',e);
+  for(var j=0;j<spareItems.length;j++)paintQty(fid,spareItems[j].id);
+  afterQty(fid);
+}
+function fillAll(fid){bulkQty(fid,function(it){return String(it.qty||0);});}
+function zeroAll(fid){bulkQty(fid,function(){return '0';});}
+function clearAll(fid){bulkQty(fid,function(){return '';});}
+function saveSpares(fid,field,val){
+  var e=getEntry(fid,'A3');e[field]=val;e.updatedAt=new Date().toISOString();
+  setEntry(fid,'A3',e);repill(fid,'A3');
+}
+
+/* ============ REPORT ============ */
+function findings(fid){
+  var f=fran(fid), out=[];
+
+  /* --- minimum stock --- */
+  var e1=getEntry(fid,'A1'), m=model(f,e1), a=e1.actual||{}, s1=statusOf(fid,'A1');
+  if(s1==='pending'){
+    out.push({area:'Minimum stock',t:'Stock position not verified',d:'The tray count for '+(month||'this month')+' has not been filled in.'});
+  }else{
+    var pts=[['vehicle','Vehicle loading',1.4],['empty','Empty trays for production',1.2],
+             ['stock','Finished goods stock (2 days)',2.0],['market','Route stock in market',m.marketMult]];
+    for(var i=0;i<pts.length;i++){
+      var req=m.dailyTrays*pts[i][2], act=parseFloat(a[pts[i][0]]);
+      if(!isNaN(act)&&act<req-0.5)
+        out.push({area:'Minimum stock',t:pts[i][1]+' is below requirement',
+          d:fmt(act)+' trays held against '+fmt(req)+' required — short by '+fmt(req-act)+' trays.'});
+    }
+  }
+  var own=f.trays||0;
+  if(!own) out.push({area:'Minimum stock',t:'Factory tray count not recorded',d:'Enter how many trays this unit owns so capacity can be judged.'});
+  else if(own<m.totalTrays-0.5)
+    out.push({area:'Minimum stock',t:'Factory does not own enough trays',
+      d:fmt(own)+' trays owned against '+fmt(m.totalTrays)+' needed for a '+fmt(m.target)+' bottle target — arrange '+fmt(Math.ceil(m.totalTrays-own))+' more trays.'});
+  if(e1.actionPlan) out.push({area:'Minimum stock',t:'Action plan noted',d:e1.actionPlan});
+
+  /* --- raw materials --- */
+  var e2=getEntry(fid,'A2'), r=rawModel(f,e2), s2=statusOf(fid,'A2');
+  if(s2==='pending'){
+    out.push({area:'Raw materials',t:'Raw material position not verified',
+      d:(!r.flavours.length?'No flavours have been listed for this unit.':'Flavour batches or top sleeve stock is not filled in.')});
+  }else{
+    if(r.batchGap<-0.01)
+      out.push({area:'Raw materials',t:'Flavour stock below requirement',
+        d:d1(r.batchAct)+' batches held against '+d1(r.batchReq)+' needed — short by '+d1(Math.abs(r.batchGap))+' batches.'});
+    if(r.sleeveGap<-0.5)
+      out.push({area:'Raw materials',t:'Top sleeve below requirement',
+        d:fmt(r.sleeveAct)+' held against '+fmt(r.sleeveReq)+' required — short by '+fmt(Math.abs(r.sleeveGap))+'.'});
+  }
+  if(e2.remarks) out.push({area:'Raw materials',t:'Remarks',d:e2.remarks});
+
+  /* --- spares --- */
+  var e3=getEntry(fid,'A3'), q3=e3.qty||{}, s3=statusOf(fid,'A3'), c3=spareCounts(fid);
+  if(!spareItems.length){
+    out.push({area:'Spares',t:'Spares list not set up',d:'Add the parts on the Franchises tab.'});
+  }else if(s3==='pending'){
+    out.push({area:'Spares',t:'Spares check incomplete',
+      d:c3.un+' of '+spareItems.length+' parts have not been counted.'});
+  }
+  var byV={};
+  for(var w=0;w<spareItems.length;w++){
+    var itw=spareItems[w], nd=itw.qty||0, vw=q3[itw.id];
+    if(vw===''||vw==null||isNaN(parseFloat(vw)))continue;
+    var sh=nd-parseFloat(vw);
+    if(sh>0){
+      var vn2=itw.vendor||'Not assigned';
+      if(!byV[vn2])byV[vn2]=[];
+      byV[vn2].push(itw.name+' — '+fmt(sh)+' no'+(sh>1?'s':''));
+    }
+  }
+  var vks=Object.keys(byV).sort();
+  if(vks.length){
+    out.push({area:'Spares',t:c3.short+' spare part'+(c3.short>1?'s':'')+' below the required quantity',
+      d:fmt(c3.pieces)+' piece'+(c3.pieces>1?'s':'')+' to be arranged in total.'});
+    for(var vi=0;vi<vks.length;vi++)
+      out.push({area:'Order from '+vks[vi],t:byV[vks[vi]].length+' part'+(byV[vks[vi]].length>1?'s':'')+' to indent from '+vks[vi],
+        d:byV[vks[vi]].join('; ')+'.'});
+  }
+  if(e3.remarks) out.push({area:'Spares',t:'Remarks',d:e3.remarks});
+
+  return out;
+}
+
+function renderReport(){
+  if(!franchises.length){$('rpOut').innerHTML='<div class="card"><div class="empty">Create a franchise first.</div></div>';return;}
+  var scope=$('rpPick').value, h='', clear=0, flagged=0;
+  var body='';
+  for(var i=0;i<franchises.length;i++){
+    var f=franchises[i], fnd=findings(f.id);
+    var real=fnd.filter(function(x){return x.t!=='Remarks'&&x.t!=='Action plan noted';});
+    if(real.length)flagged++;else clear++;
+    if(scope==='problem'&&!real.length)continue;
+
+    var sts=[statusOf(f.id,'A1'),statusOf(f.id,'A2'),statusOf(f.id,'A3')];
+    body+='<div class="card"><div class="dhead"><div>'+
+      '<div class="eyebrow">'+esc(f.city||'—')+(f.state?' · '+esc(f.state):'')+'</div>'+
+      '<h2>'+esc(f.name)+'</h2></div>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+        pill(sts[0])+pill(sts[1])+pill(sts[2])+'</div></div>'+
+      '<p class="hint">Target '+fmt(f.target)+' bottles · '+f.days+' working days · '+f.routes+' routes · '+fmt(f.trays||0)+' trays owned</p>';
+
+    if(!real.length){
+      body+='<div class="verdict v-ok">No problems found. This unit clears the screening check for '+esc(month||'this month')+'.</div>';
+    }else{
+      body+='<div class="verdict v-bad">'+real.length+' point'+(real.length>1?'s':'')+' to be rectified by the franchisee.</div>';
+      for(var j=0;j<fnd.length;j++){
+        body+='<div class="find"><div class="ix">'+(j+1)+'</div>'+
+          '<div class="fb"><b>'+esc(fnd[j].t)+'</b><span>'+esc(fnd[j].d)+'</span></div>'+
+          '<div class="ar">'+esc(fnd[j].area)+'</div></div>';
+      }
+    }
+    body+='</div>';
+  }
+  h='<div class="card"><div class="eyebrow">'+esc(month||'—')+'</div><h2>Screening summary</h2>'+
+    '<div class="tally" style="margin-top:14px">'+
+    '<div class="t"><div class="eyebrow">Franchises</div><div class="v">'+franchises.length+'</div></div>'+
+    '<div class="t ok"><div class="eyebrow">Clear</div><div class="v">'+clear+'</div></div>'+
+    '<div class="t dev"><div class="eyebrow">To be rectified</div><div class="v">'+flagged+'</div></div></div></div>';
+  $('rpOut').innerHTML=h+(body||'<div class="card"><div class="empty">Every franchise is clear.</div></div>');
+}
+
+/* ============ backup ============ */
+function exportData(){
+  var blob=new Blob([JSON.stringify({franchises:franchises,entries:entries,spares:spareItems},null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='franchise-ops-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importData(ev){
+  var file=ev.target.files[0];if(!file)return;
+  var rd=new FileReader();
+  rd.onload=function(){try{var d=JSON.parse(rd.result);
+    if(d.franchises)franchises=d.franchises; if(d.entries)entries=d.entries; if(d.spares)spareItems=d.spares;
+    store.set('gs_franchises',franchises);store.set('gs_entries',entries);store.set('gs_spares_v2',spareItems);
+    fillPickers();renderMgmt();renderSpares();renderFV();renderPV();toast('Data imported');
+  }catch(err){toast('That file could not be read');}};
+  rd.readAsText(file);
+}
+
+/* ============ init ============ */
+function seedAndRender(cloudHad){
+  if(!month){var d=new Date();month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');store.set('gs_month',month);}
+  $('monthSel').value=month;
+  /* only seed a sample unit when neither cloud nor local had any franchises */
+  if(!franchises.length&&!cloudHad){
+    franchises=[{id:'f1',name:'Sample Unit',city:'Chennai',state:'Tamil Nadu',target:30000,days:25,bpt:24,routes:6,trays:1000}];
+    store.set('gs_franchises',franchises);
+  }
+  showCap();
+  /* spares list is a fixed master; load it if it isn't present yet */
+  if(!spareItems.length){
+    for(var z=0;z<SPARES_SEED.length;z++)
+      spareItems.push({id:'s'+z,name:SPARES_SEED[z][0],qty:SPARES_SEED[z][1],vendor:SPARES_SEED[z][2]});
+    store.set('gs_spares_v2',spareItems);
+  }
+  fillPickers();renderMgmt();renderSpares();renderDash();renderFV();renderPV();
+}
+(function(){
+  /* render immediately from local cache, then hydrate from Supabase and re-render */
+  seedAndRender(franchises.length>0);
+  cloud.pull(function(cloudHad){ seedAndRender(cloudHad||franchises.length>0); });
+})();
+</script>
+</body>
+</html>
