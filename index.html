@@ -238,7 +238,46 @@ td input{padding:6px 8px;width:95px;text-align:right}
     <div class="grid">
       <div><label>Franchise name</label><input id="cName" placeholder="e.g. Coimbatore Unit"></div>
       <div><label>City</label><input id="cCity" placeholder="Coimbatore"></div>
-      <div><label>State</label><input id="cState" placeholder="Tamil Nadu"></div>
+      <div><label>State</label>
+        <select id="cState">
+          <option value="">Select state</option>
+          <option>Tamil Nadu</option>
+          <option>Maharashtra</option>
+          <option>Andhra Pradesh</option>
+          <option>Telangana</option>
+          <option>Karnataka</option>
+          <option>Arunachal Pradesh</option>
+          <option>Gujarat</option>
+          <option>Jharkhand</option>
+          <option>Andaman and Nicobar Islands</option>
+          <option>Assam</option>
+          <option>Bihar</option>
+          <option>Chandigarh</option>
+          <option>Chhattisgarh</option>
+          <option>Dadra and Nagar Haveli and Daman and Diu</option>
+          <option>Delhi</option>
+          <option>Goa</option>
+          <option>Haryana</option>
+          <option>Himachal Pradesh</option>
+          <option>Jammu and Kashmir</option>
+          <option>Kerala</option>
+          <option>Ladakh</option>
+          <option>Lakshadweep</option>
+          <option>Madhya Pradesh</option>
+          <option>Manipur</option>
+          <option>Meghalaya</option>
+          <option>Mizoram</option>
+          <option>Nagaland</option>
+          <option>Odisha</option>
+          <option>Puducherry</option>
+          <option>Punjab</option>
+          <option>Rajasthan</option>
+          <option>Sikkim</option>
+          <option>Tripura</option>
+          <option>Uttar Pradesh</option>
+          <option>Uttarakhand</option>
+          <option>West Bengal</option>
+        </select></div>
       <div><label>Monthly target (bottles)</label><input type="number" id="cTarget" value="30000" min="0"></div>
       <div><label>Working days</label><input type="number" id="cDays" value="25" min="1"></div>
       <div><label>Bottles per tray</label><input type="number" id="cBpt" value="24" min="1"></div>
@@ -251,6 +290,12 @@ td input{padding:6px 8px;width:95px;text-align:right}
       <div><label>Number of routes</label><input type="number" id="cRoutes" value="6" min="0" oninput="onRoutesCreate()"></div>
       <div><label>Total trays available in factory</label><input type="number" id="cTrays" value="1000" min="0" oninput="showCap()">
         <div class="hint" id="capNote" style="margin:5px 0 0;font-size:12px"></div></div>
+      <div><label>Number of workers in factory</label><input type="number" id="cWorkers" value="0" min="0"></div>
+      <div><label>Supervisor</label>
+        <select id="cSupervisor">
+          <option value="No">No</option>
+          <option value="Yes">Yes</option>
+        </select></div>
     </div>
     <div style="margin-top:16px"><button class="btn" onclick="addFranchise()">Create franchise</button></div>
   </div>
@@ -344,6 +389,7 @@ var FACTORY=[
  {key:'stock',name:'Finished goods stock (2 days)',mult:2.0,note:'Two days of buffer'}
 ];
 var FACTORY_MULT=4.6, PER_ROUTE=1.5, BATCH_BOTTLES=560;
+var FLAVOURS_SEED=['Blueberry','Lemon','Orange','Pineapple','Green Apple','Paneer','Jeera'];
 
 var SPARES_SEED=[["1/2 ball valve",2,"Akshay"],["1/2 m f brass adaptor",2,"Akshay"],["1/2 m f brass elbow",2,"Akshay"],["1/2x1/4 coupling",2,"Akshay"],["1/4 frl parts",2,"Akshay"],["1/4 union",2,"Akshay"],["1/4x10 mm elbow",2,"Akshay"],["1/4x10 mm pu brass adaptor",2,"Akshay"],["1/4x8 elbow",20,"Akshay"],["1/8 silencer",8,"Akshay"],["10 mm hose",4,"Akshay"],["21/2 mtr hose",1,"Akshay"],["3 mtr hose",2,"Akshay"],["3/4 \" ball valve",1,"Akshay"],["3/4 x 1/2 brass adopter",1,"Akshay"],["3/4x1/2 union",1,"Akshay"],["3/4x3/4 union",1,"Akshay"],["3/8 wheel valve",1,"Akshay"],["3/8x1/4 brass union",1,"Akshay"],["30 pump seal kit",1,"Akshay"],["32x25 seal kit",1,"Akshay"],["50x100 seal kit",1,"Akshay"],["8 mm hose",10,"Akshay"],["8 mm tee",14,"Akshay"],["A40 belt",1,"Akshay"],["Bottle table sheet",2,"Akshay"],["Filling valve cap washer",4,"Akshay"],["Filling valve fixing washer",4,"Akshay"],["Filling valve spool washer",12,"Akshay"],["Filling valve spring",4,"Akshay"],["Flow control valve",4,"Akshay"],["GG O ring",20,"Akshay"],["Goli head rubber",4,"Akshay"],["Heater",1,"Akshay"],["Nrv complete",1,"Akshay"],["One side solinad valve",2,"Akshay"],["Push button & element",2,"Akshay"],["Regulator",1,"Akshay"],["Safety valve",1,"Akshay"],["Water level controller",1,"Akshay"],["AIRA BSD COIL",1,"Soda Hub"],["AIRA GSD COIL",1,"Soda Hub"],["AIRA MAKE 2/2 WAY DIRECT ACTING SOLENOID VALVE 10 KG PRESSURE",1,"Soda Hub"],["BULP SENSOR 28 MM",2,"Soda Hub"],["DANFOSE KP35",1,"Soda Hub"],["INPUT CARD",1,"Soda Hub"],["NECK SEAL",2,"Soda Hub"],["OUTPUT CARD",1,"Soda Hub"],["PT 100 SENSOR",1,"Soda Hub"],["SEAL KIT-A12-32MMDIA",1,"Soda Hub"],["SEAL KIT-A12-50MMDIA",1,"Soda Hub"],["PIPE FLEXIBLE - 1/4*1MTR SS",1,"Soda Hub"],["CONDUCTER 220 VOLT",1,"Soda Hub"],["CO2 GAS BRASS NUTS & NIPPLE",2,"Soda Hub"]];
 
@@ -452,17 +498,18 @@ function showCap(){
 function addFranchise(){
   var nm=$('cName').value.trim();
   if(!nm){toast('Enter a franchise name');return;}
-  franchises.push({id:'f'+Date.now(),name:nm,city:$('cCity').value.trim(),state:$('cState').value.trim(),
+  franchises.push({id:'f'+Date.now(),name:nm,city:$('cCity').value.trim(),state:$('cState').value,
     target:parseFloat($('cTarget').value)||0,days:parseFloat($('cDays').value)||25,
     bpt:parseFloat($('cBpt').value)||24,routes:parseFloat($('cRoutes').value)||0,
-    trays:parseFloat($('cTrays').value)||0});
+    trays:parseFloat($('cTrays').value)||0,
+    workers:parseFloat($('cWorkers').value)||0,supervisor:$('cSupervisor').value});
   store.set('gs_franchises',franchises);
-  $('cName').value='';$('cCity').value='';$('cState').value='';
+  $('cName').value='';$('cCity').value='';$('cState').value='';$('cWorkers').value='0';$('cSupervisor').value='No';
   fillPickers();renderMgmt();renderFV();renderPV();toast('Franchise created');
 }
 function editF(id,field,val){
   var f=fran(id);if(!f)return;
-  f[field]=(field==='name'||field==='city'||field==='state')?val:(parseFloat(val)||0);
+  f[field]=(field==='name'||field==='city'||field==='state'||field==='supervisor')?val:(parseFloat(val)||0);
   store.set('gs_franchises',franchises);fillPickers();renderFV();renderPV();
 }
 function delFranchise(id){
@@ -473,7 +520,7 @@ function renderMgmt(){
   if(!franchises.length){$('mgmtOut').innerHTML='<div class="empty">No franchises yet. Create the first one above.</div>';return;}
   var h='<table><thead><tr><th>Franchise</th><th class="r">Target</th><th class="r">Days</th>'+
         '<th class="r">Bottles/tray</th><th class="r">Routes</th><th class="r">Multiplier</th>'+
-        '<th class="r">Trays owned</th><th class="r">Trays needed</th><th>Tray position</th><th></th></tr></thead><tbody>';
+        '<th class="r">Trays owned</th><th class="r">Workers</th><th>Supervisor</th><th class="r">Trays needed</th><th>Tray position</th><th></th></tr></thead><tbody>';
   for(var i=0;i<franchises.length;i++){var f=franchises[i];
     var need=(f.target/(f.days||1)/(f.bpt||1))*(FACTORY_MULT+f.routes*PER_ROUTE);
     var own=f.trays||0, d=own-need;
@@ -484,6 +531,10 @@ function renderMgmt(){
       '<td class="r"><input type="number" value="'+f.routes+'" onchange="editF(\''+f.id+'\',\'routes\',this.value)"></td>'+
       '<td class="r num">'+(Math.round((FACTORY_MULT+f.routes*PER_ROUTE)*100)/100)+'\u00d7</td>'+
       '<td class="r"><input type="number" value="'+own+'" onchange="editF(\''+f.id+'\',\'trays\',this.value)"></td>'+
+      '<td class="r"><input type="number" value="'+(f.workers||0)+'" onchange="editF(\''+f.id+'\',\'workers\',this.value)"></td>'+
+      '<td><select onchange="editF(\''+f.id+'\',\'supervisor\',this.value)">'+
+        '<option value="No"'+((f.supervisor||'No')==='No'?' selected':'')+'>No</option>'+
+        '<option value="Yes"'+(f.supervisor==='Yes'?' selected':'')+'>Yes</option></select></td>'+
       '<td class="r num">'+fmt(need)+'</td>'+
       '<td>'+(own?(d<-0.5?'<span class="pill p-dev">Short '+fmt(Math.abs(d))+'</span>':'<span class="pill p-ok">Spare '+fmt(d)+'</span>'):'<span class="pill p-pen">Not set</span>')+'</td>'+
       '<td class="r"><button class="btn ghost sm" onclick="delFranchise(\''+f.id+'\')">Remove</button></td></tr>';}
@@ -846,6 +897,30 @@ function rawModel(f,e){
 function d1(x){return (Math.round(x*10)/10).toLocaleString('en-IN');}
 
 function rawPanel(f,e){
+  /* ensure the standard flavour list is present; keep any values already entered,
+     match existing rows by name (case-insensitive), keep custom flavours, drop blank leftovers */
+  (function(){
+    var existing=e.flavours||[];
+    var byName={};
+    for(var x=0;x<existing.length;x++){
+      var nm=(existing[x].name||'').trim().toLowerCase();
+      if(nm)byName[nm]=existing[x];   /* remember named rows and their batches */
+    }
+    var merged=[];
+    for(var s=0;s<FLAVOURS_SEED.length;s++){
+      var key=FLAVOURS_SEED[s].toLowerCase();
+      if(byName[key]){merged.push({name:FLAVOURS_SEED[s],batches:byName[key].batches});delete byName[key];}
+      else merged.push({name:FLAVOURS_SEED[s],batches:''});
+    }
+    /* keep any custom (non-standard) flavours the user added that actually have a name */
+    for(var y=0;y<existing.length;y++){
+      var enm=(existing[y].name||'').trim();
+      if(enm && byName[enm.toLowerCase()]){merged.push({name:enm,batches:existing[y].batches});delete byName[enm.toLowerCase()];}
+    }
+    /* only rewrite storage if something actually changed, to avoid needless cloud writes */
+    if(JSON.stringify(merged)!==JSON.stringify(existing)){e.flavours=merged;setEntry(f.id,'A2',e);}
+    else e.flavours=merged;
+  })();
   var r=rawModel(f,e);
   var h='<div class="grid" style="margin-bottom:16px">'+
     '<div><label>Monthly target (bottles)</label><input type="number" value="'+(e.target!==''&&e.target!=null?e.target:f.target)+
@@ -867,12 +942,13 @@ function rawPanel(f,e){
     h+='<tr><td><input value="'+esc(fv.name||'')+'" placeholder="Flavour name" '+
         'onchange="saveFlavour(\''+f.id+'\','+i+',\'name\',this.value)"></td>'+
       '<td class="r"><input type="number" value="'+esc(b)+'" placeholder="0" '+
+        'oninput="liveBatches(\''+f.id+'\','+i+',this.value)" '+
         'onchange="saveFlavour(\''+f.id+'\','+i+',\'batches\',this.value)"></td>'+
-      '<td class="r num">'+fmt(bn*r.batchSize)+'</td>'+
+      '<td class="r num" id="flBot_'+i+'">'+fmt(bn*r.batchSize)+'</td>'+
       '<td class="r"><button class="btn ghost sm" onclick="delFlavour(\''+f.id+'\','+i+')">Remove</button></td></tr>';
   }
   h+='<tr class="total"><td>Total batches in factory</td><td class="r num" id="rawTot">'+d1(r.batchAct)+'</td>'+
-     '<td class="r num">'+fmt(r.batchAct*r.batchSize)+'</td><td></td></tr>';
+     '<td class="r num" id="rawTotBot">'+fmt(r.batchAct*r.batchSize)+'</td><td></td></tr>';
   h+='</tbody></table>';
   h+='<div style="margin-top:12px"><button class="btn ghost sm" onclick="addFlavour(\''+f.id+'\')">Add flavour</button></div>';
 
@@ -908,6 +984,11 @@ function rawCards(r){
 function refreshRaw(fid){
   var f=fran(fid), e=getEntry(fid,'A2'), r=rawModel(f,e);
   var tot=$('rawTot'); if(tot)tot.textContent=d1(r.batchAct);
+  var totBot=$('rawTotBot'); if(totBot)totBot.textContent=fmt(r.batchAct*r.batchSize);
+  for(var i=0;i<r.flavours.length;i++){
+    var cell=$('flBot_'+i);
+    if(cell){var bn=parseFloat(r.flavours[i].batches);if(isNaN(bn))bn=0;cell.textContent=fmt(bn*r.batchSize);}
+  }
   var cards=$('rawCards'); if(cards)cards.innerHTML=rawCards(r);
   repill(fid,'A2');
 }
@@ -924,6 +1005,15 @@ function addFlavour(fid){
 function delFlavour(fid,i){
   var e=getEntry(fid,'A2'); e.flavours=e.flavours||[];
   e.flavours.splice(i,1); setEntry(fid,'A2',e); rerenderOpen();
+}
+function liveBatches(fid,i,val){
+  var e=getEntry(fid,'A2'); if(!e.flavours||!e.flavours[i])return;
+  e.flavours[i].batches=val;
+  var f=fran(fid), r=rawModel(f,e);
+  var cell=$('flBot_'+i);
+  if(cell){var bn=parseFloat(val);if(isNaN(bn))bn=0;cell.textContent=fmt(bn*r.batchSize);}
+  var totBot=$('rawTotBot'); if(totBot)totBot.textContent=fmt(r.batchAct*r.batchSize);
+  var tot=$('rawTot'); if(tot)tot.textContent=d1(r.batchAct);
 }
 function saveFlavour(fid,i,field,val){
   var e=getEntry(fid,'A2'); e.flavours=e.flavours||[];
