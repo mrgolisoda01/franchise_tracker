@@ -933,30 +933,7 @@ function rawModel(f,e){
 function d1(x){return (Math.round(x*10)/10).toLocaleString('en-IN');}
 
 function rawPanel(f,e){
-  /* ensure the standard flavour list is present; keep any values already entered,
-     match existing rows by name (case-insensitive), keep custom flavours, drop blank leftovers */
-  (function(){
-    var existing=e.flavours||[];
-    var byName={};
-    for(var x=0;x<existing.length;x++){
-      var nm=(existing[x].name||'').trim().toLowerCase();
-      if(nm)byName[nm]=existing[x];   /* remember named rows and their batches */
-    }
-    var merged=[];
-    for(var s=0;s<FLAVOURS_SEED.length;s++){
-      var key=FLAVOURS_SEED[s].toLowerCase();
-      if(byName[key]){merged.push({name:FLAVOURS_SEED[s],batches:byName[key].batches});delete byName[key];}
-      else merged.push({name:FLAVOURS_SEED[s],batches:''});
-    }
-    /* keep any custom (non-standard) flavours the user added that actually have a name */
-    for(var y=0;y<existing.length;y++){
-      var enm=(existing[y].name||'').trim();
-      if(enm && byName[enm.toLowerCase()]){merged.push({name:enm,batches:existing[y].batches});delete byName[enm.toLowerCase()];}
-    }
-    /* only rewrite storage if something actually changed, to avoid needless cloud writes */
-    if(JSON.stringify(merged)!==JSON.stringify(existing)){e.flavours=merged;setEntry(f.id,'A2',e);}
-    else e.flavours=merged;
-  })();
+  e.flavours=e.flavours||[];
   var r=rawModel(f,e);
   var h='<div class="grid" style="margin-bottom:16px">'+
     '<div><label>Monthly target (bottles)</label><input type="number" value="'+(e.target!==''&&e.target!=null?e.target:f.target)+
@@ -975,8 +952,7 @@ function rawPanel(f,e){
   for(var i=0;i<r.flavours.length;i++){
     var fv=r.flavours[i], b=(fv.batches===''||fv.batches==null)?'':fv.batches;
     var bn=parseFloat(b); if(isNaN(bn))bn=0;
-    h+='<tr><td><input value="'+esc(fv.name||'')+'" placeholder="Flavour name" '+
-        'onchange="saveFlavour(\''+f.id+'\','+i+',\'name\',this.value)"></td>'+
+    h+='<tr><td><b>'+esc(fv.name||'')+'</b></td>'+
       '<td class="r"><input type="number" value="'+esc(b)+'" placeholder="0" '+
         'oninput="liveBatches(\''+f.id+'\','+i+',this.value)" '+
         'onchange="saveFlavour(\''+f.id+'\','+i+',\'batches\',this.value)"></td>'+
@@ -986,7 +962,15 @@ function rawPanel(f,e){
   h+='<tr class="total"><td>Total batches in factory</td><td class="r num" id="rawTot">'+d1(r.batchAct)+'</td>'+
      '<td class="r num" id="rawTotBot">'+fmt(r.batchAct*r.batchSize)+'</td><td></td></tr>';
   h+='</tbody></table>';
-  h+='<div style="margin-top:12px"><button class="btn ghost sm" onclick="addFlavour(\''+f.id+'\')">Add flavour</button></div>';
+  /* header dropdown: lists only flavours not yet added; picking one adds it as a row */
+  var already={};
+  for(var ai=0;ai<r.flavours.length;ai++){var an=(r.flavours[ai].name||'').trim().toLowerCase();if(an)already[an]=true;}
+  var addOpts='<option value="">+ Add flavour</option>';
+  for(var ao=0;ao<FLAVOURS_SEED.length;ao++){
+    var av=FLAVOURS_SEED[ao];
+    if(!already[av.toLowerCase()])addOpts+='<option value="'+esc(av)+'">'+esc(av)+'</option>';
+  }
+  h+='<div style="margin-top:12px"><select style="max-width:220px" onchange="addFlavour(\''+f.id+'\',this.value);this.value=\'\';">'+addOpts+'</select></div>';
 
   h+='<div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin:16px 0 4px" id="rawCards">'+rawCards(r)+'</div>';
 
@@ -1033,9 +1017,13 @@ function saveRaw(fid,field,val,rerender){
   setEntry(fid,'A2',e);
   if(rerender)rerenderOpen(); else repill(fid,'A2');
 }
-function addFlavour(fid){
+function addFlavour(fid,name){
+  name=(name||'').trim();
+  if(!name)return;
   var e=getEntry(fid,'A2'); e.flavours=e.flavours||[];
-  e.flavours.push({name:'',batches:''});
+  /* don't add the same flavour twice */
+  for(var i=0;i<e.flavours.length;i++){if((e.flavours[i].name||'').trim().toLowerCase()===name.toLowerCase())return;}
+  e.flavours.push({name:name,batches:''});
   setEntry(fid,'A2',e); rerenderOpen();
 }
 function delFlavour(fid,i){
@@ -1164,10 +1152,22 @@ function spareCards(fid){
 }
 
 /* ---- per-franchise checklist ---- */
+function activeVendor(fid){
+  /* the vendor a user has started filling; only one vendor may be edited at a time.
+     returns '' when nothing is filled yet (both editable). a value counts as filled
+     only if it is a real entry (not blank) — clearing all of a vendor releases the lock. */
+  var q=(getEntry(fid,'A3').qty)||{};
+  for(var i=0;i<spareItems.length;i++){
+    var it=spareItems[i], val=q[it.id];
+    if(val!==''&&val!=null&&!isNaN(parseFloat(val)))return it.vendor||'Not assigned';
+  }
+  return '';
+}
 function sparesPanel(f,e){
   if(!spareItems.length)
     return '<div class="empty">No spares list set up. Add parts on the Franchises tab.</div>';
   var q=e.qty||{};
+  var lockV=activeVendor(f.id);   /* '' = none active yet */
   var h='<div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));margin-bottom:14px" id="spCards">'+spareCards(f.id)+'</div>';
   h+='<div class="pickbar">'+
     '<div><label>Search part or vendor</label><input class="srch" placeholder="e.g. filling valve, soda hub" oninput="filterRows(\'ck_\',this.value)"></div>'+
@@ -1188,14 +1188,16 @@ function sparesPanel(f,e){
   for(var g=0;g<order.length;g++){
     var vn=order[g], items=byV[vn]||[], vneed=0;
     for(var x=0;x<items.length;x++)vneed+=(items[x].qty||0);
+    var vlocked=(lockV!==''&&vn!==lockV);   /* another vendor is active -> this one is locked */
     h+='<tr class="group" data-vgroup="1"><td colspan="6">'+esc(vn)+' &mdash; '+items.length+
-       ' parts, '+fmt(vneed)+' pieces</td></tr>';
+       ' parts, '+fmt(vneed)+' pieces'+(vlocked?' <span style="color:var(--ink-3);font-weight:400">(locked — '+esc(lockV)+' in progress)</span>':'')+'</td></tr>';
     for(var j=0;j<items.length;j++){
       var it2=items[j], need=it2.qty||0, val=(q[it2.id]==null?'':q[it2.id]); n++;
       h+='<tr id="ck_'+it2.id+'" data-sk="'+esc((it2.name+' '+vn).toLowerCase())+'">'+
         '<td class="num">'+n+'</td><td><b>'+esc(it2.name)+'</b></td>'+
         '<td class="r num">'+fmt(need)+'</td>'+
         '<td class="r"><input type="number" id="qi_'+it2.id+'" value="'+esc(val)+'" placeholder="0" min="0" '+
+          (vlocked?'disabled title="Clear '+esc(lockV)+' entries to edit this vendor" ':'')+
           'onchange="saveQty(\''+f.id+'\',\''+it2.id+'\',this.value)"></td>'+
         '<td class="r num" id="qs_'+it2.id+'">'+rowShort(need,val)+'</td>'+
         '<td id="qp_'+it2.id+'">'+rowPill(need,val)+'</td></tr>';
@@ -1230,20 +1232,34 @@ function afterQty(fid){
   repill(fid,'A3');
 }
 function saveQty(fid,id,val){
+  var before=activeVendor(fid);
   var e=getEntry(fid,'A3');e.qty=e.qty||{};e.qty[id]=val;
   e.updatedAt=new Date().toISOString();setEntry(fid,'A3',e);
+  var after=activeVendor(fid);
+  if(before!==after){rerenderOpen();return;}  /* lock engaged or released -> redraw to (un)lock other vendors */
   paintQty(fid,id);afterQty(fid);
 }
-function bulkQty(fid,fn){
+function bulkQty(fid,fn,scope){
+  /* scope: 'active' = only the vendor in progress (or first pick), 'all' = every part */
   var e=getEntry(fid,'A3');e.qty=e.qty||{};
-  for(var i=0;i<spareItems.length;i++)e.qty[spareItems[i].id]=fn(spareItems[i]);
+  var lockV=activeVendor(fid);
+  for(var i=0;i<spareItems.length;i++){
+    var it=spareItems[i], v=it.vendor||'Not assigned';
+    if(scope==='active'&&lockV!==''&&v!==lockV)continue;  /* don't touch locked vendors */
+    e.qty[it.id]=fn(it);
+  }
   e.updatedAt=new Date().toISOString();setEntry(fid,'A3',e);
-  for(var j=0;j<spareItems.length;j++)paintQty(fid,spareItems[j].id);
-  afterQty(fid);
+  rerenderOpen();  /* redraw so lock state and every row reflect the bulk change */
 }
-function fillAll(fid){bulkQty(fid,function(it){return String(it.qty||0);});}
-function zeroAll(fid){bulkQty(fid,function(){return '0';});}
-function clearAll(fid){bulkQty(fid,function(){return '';});}
+function fillAll(fid){
+  if(activeVendor(fid)===''){toast('Enter a quantity for one vendor first, then use this');return;}
+  bulkQty(fid,function(it){return String(it.qty||0);},'active');
+}
+function zeroAll(fid){
+  if(activeVendor(fid)===''){toast('Enter a quantity for one vendor first, then use this');return;}
+  bulkQty(fid,function(){return '0';},'active');
+}
+function clearAll(fid){bulkQty(fid,function(){return '';},'all');}
 function saveSpares(fid,field,val){
   var e=getEntry(fid,'A3');e[field]=val;e.updatedAt=new Date().toISOString();
   setEntry(fid,'A3',e);repill(fid,'A3');
