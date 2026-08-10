@@ -495,12 +495,18 @@ function statusOf(fid,pid){
   }
   if(p.type==='spares'){
     if(!spareItems.length)return 'pending';
-    var q=e.qty||{}, bad=false;
+    var q=e.qty||{}, av=activeVendor(fid);
+    if(av==='')return 'pending';   /* nothing entered for any vendor yet */
+    var bad=false, any=false;
     for(var z=0;z<spareItems.length;z++){
-      var v=q[spareItems[z].id];
-      if(v===''||v==null||isNaN(parseFloat(v)))return 'pending';
-      if(parseFloat(v)<(spareItems[z].qty||0))bad=true;
+      var it=spareItems[z];
+      if((it.vendor||'Not assigned')!==av)continue;  /* only judge the vendor being filled */
+      any=true;
+      var v=q[it.id];
+      if(v===''||v==null||isNaN(parseFloat(v)))return 'pending';  /* active vendor not fully filled */
+      if(parseFloat(v)<(it.qty||0))bad=true;
     }
+    if(!any)return 'pending';
     return bad?'dev':'ok';
   }
   if(p.type==='raw'){
