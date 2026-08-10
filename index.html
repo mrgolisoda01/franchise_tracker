@@ -341,7 +341,7 @@ var store={
 var SB_URL='https://fajhvuspgsdfjkjoqhjw.supabase.co/rest/v1/';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhamh2dXNwZ3NkZmpram9xaGp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1Nzg5MjIsImV4cCI6MjEwMTE1NDkyMn0.Z7J8iMEj1RVnCOSihuzupTEk-l0tB1yl6JQI-us41Ew';
 var SB_TABLE='kv_store';
-var SB_KEYS=['gs_franchises','gs_entries','gs_spares_v2','gs_month'];
+var SB_KEYS=['gs_franchises','gs_spares_v2','gs_month'];
 var cloud={
  hydrating:false,
  hdr:function(extra){var h={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};if(extra)for(var x in extra)h[x]=extra[x];return h;},
@@ -362,13 +362,41 @@ var cloud={
        var got={};
        for(var i=0;i<rows.length;i++)got[rows[i].k]=rows[i].v;
        if(got.gs_franchises!==undefined){franchises=got.gs_franchises;store.set('gs_franchises',franchises);}
-       if(got.gs_entries!==undefined){entries=got.gs_entries;store.set('gs_entries',entries);}
        if(got.gs_spares_v2!==undefined){spareItems=got.gs_spares_v2;store.set('gs_spares_v2',spareItems);}
        if(got.gs_month!==undefined){month=got.gs_month;store.set('gs_month',month);}
        cloud.hydrating=false;
        cb(Object.keys(got).length>0);
      })
      .catch(function(){cloud.hydrating=false;cb(false);});
+ }
+};
+
+/* ============ per-row entries sync (multi-user safe) ============
+   Entries are stored one row per franchise|process|month cell in the
+   entry_rows table, so two users editing different cells never overwrite
+   each other. The old whole-blob gs_entries is kept only as a local cache. */
+var ENTRY_TABLE='entry_rows';
+var entrySync={
+ pushRow:function(k){
+   if(cloud.hydrating)return;
+   var e=entries[k];
+   if(e===undefined)return;
+   var payload={id:k,data:e,updated_at:new Date().toISOString()};
+   fetch(SB_URL+ENTRY_TABLE,{
+     method:'POST',
+     headers:cloud.hdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+     body:JSON.stringify(payload)
+   }).catch(function(){});
+ },
+ pullAll:function(cb){
+   fetch(SB_URL+ENTRY_TABLE+'?select=id,data',{headers:cloud.hdr()})
+     .then(function(r){return r.ok?r.json():[];})
+     .then(function(rows){
+       var got={};
+       for(var i=0;i<rows.length;i++)got[rows[i].id]=rows[i].data;
+       cb(got);
+     })
+     .catch(function(){cb(null);});
  }
 };
 
@@ -426,7 +454,15 @@ function getEntry(fid,pid){
   if(!e){e={status:'pending',actual:{},remarks:'',owner:'',target:'',days:''};}
   return e;
 }
-function setEntry(fid,pid,e){entries[key(fid,pid)]=e;store.set('gs_entries',entries);}
+function setEntry(fid,pid,e){
+  var k=key(fid,pid);
+  entries[k]=e;
+  /* local cache only — the whole blob no longer goes to the cloud */
+  try{localStorage.setItem('gs_entries',JSON.stringify(entries));}catch(_){}
+  mem['gs_entries']=entries;
+  /* push just this one cell so concurrent users never overwrite each other */
+  entrySync.pushRow(k);
+}
 
 /* ============ stock model ============ */
 function model(f,e){
@@ -1334,7 +1370,9 @@ function importData(ev){
   var rd=new FileReader();
   rd.onload=function(){try{var d=JSON.parse(rd.result);
     if(d.franchises)franchises=d.franchises; if(d.entries)entries=d.entries; if(d.spares)spareItems=d.spares;
-    store.set('gs_franchises',franchises);store.set('gs_entries',entries);store.set('gs_spares_v2',spareItems);
+    store.set('gs_franchises',franchises);store.set('gs_spares_v2',spareItems);
+    try{localStorage.setItem('gs_entries',JSON.stringify(entries));}catch(_){}mem['gs_entries']=entries;
+    if(d.entries){for(var ik in entries){if(entries.hasOwnProperty(ik))entrySync.pushRow(ik);}}
     fillPickers();renderMgmt();renderSpares();renderFV();renderPV();toast('Data imported');
   }catch(err){toast('That file could not be read');}};
   rd.readAsText(file);
@@ -1362,6 +1400,26 @@ function seedAndRender(cloudHad){
   /* render immediately from local cache, then hydrate from Supabase and re-render */
   seedAndRender(franchises.length>0);
   cloud.pull(function(cloudHad){ seedAndRender(cloudHad||franchises.length>0); });
+
+  /* hydrate entries from the per-row table (multi-user safe) */
+  var localEntries={};
+  for(var lk in entries){if(entries.hasOwnProperty(lk))localEntries[lk]=entries[lk];}
+  entrySync.pullAll(function(cloudRows){
+    if(cloudRows){
+      /* cloud rows win for cells that exist there; keep local-only cells too */
+      for(var ck in cloudRows){if(cloudRows.hasOwnProperty(ck))entries[ck]=cloudRows[ck];}
+      /* one-time migration: any local/blob cell not yet in the cloud gets pushed up */
+      for(var mk in localEntries){
+        if(localEntries.hasOwnProperty(mk) && !(mk in cloudRows)){
+          entries[mk]=localEntries[mk];
+          entrySync.pushRow(mk);
+        }
+      }
+    }
+    try{localStorage.setItem('gs_entries',JSON.stringify(entries));}catch(_){}
+    mem['gs_entries']=entries;
+    fillPickers();renderMgmt();renderSpares();renderDash();renderFV();renderPV();
+  });
 })();
 </script>
 </body>
