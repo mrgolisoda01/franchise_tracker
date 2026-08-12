@@ -1464,26 +1464,53 @@ function seedAndRender(cloudHad){
   seedAndRender(franchises.length>0);
   cloud.pull(function(cloudHad){ seedAndRender(cloudHad||franchises.length>0); });
 
-  /* hydrate franchises from the per-row table (multi-user safe) */
+  /* hydrate franchises from the per-row table (multi-user safe, self-healing) */
   var localFrans=franchises.slice();
-  franSync.pullAll(function(cloudFrans){
-    if(cloudFrans){
-      cloud.hydrating=true;
-      var byId={};
-      for(var i=0;i<cloudFrans.length;i++)byId[cloudFrans[i].id]=cloudFrans[i];
-      /* one-time migration: any local franchise not yet in the cloud gets pushed up and kept */
-      for(var j=0;j<localFrans.length;j++){
-        var lf=localFrans[j];
-        if(!(lf.id in byId)){byId[lf.id]=lf;cloudFrans.push(lf);franSync.pushRow(lf.id);}
-      }
-      /* the cloud (plus migrated locals) is now the source of truth */
-      franchises.length=0;
-      for(var k=0;k<cloudFrans.length;k++)franchises.push(cloudFrans[k]);
-      store.set('gs_franchises',franchises);
-      cloud.hydrating=false;
-      fillPickers();renderMgmt();renderDash();renderFV();renderPV();
-    }
-  });
+  /* also pull the OLD cloud blob once, so franchises that only live there get migrated up */
+  fetch(SB_URL+SB_TABLE+'?select=v&k=eq.gs_franchises',{headers:cloud.hdr()})
+    .then(function(r){return r.ok?r.json():[];})
+    .then(function(rows){
+      var blobFrans=(rows[0]&&rows[0].v)?rows[0].v:[];
+      franSync.pullAll(function(cloudFrans){
+        cloud.hydrating=true;
+        var cloudList=cloudFrans||[];
+        var byId={};
+        for(var i=0;i<cloudList.length;i++)byId[cloudList[i].id]=cloudList[i];
+        /* migrate local-cache franchises not yet in the cloud */
+        for(var j=0;j<localFrans.length;j++){
+          var lf=localFrans[j];
+          if(!(lf.id in byId)){byId[lf.id]=lf;cloudList.push(lf);franSync.pushRow(lf.id);}
+        }
+        /* migrate old-blob franchises not yet in the cloud */
+        for(var b=0;b<blobFrans.length;b++){
+          var bf=blobFrans[b];
+          if(bf&&bf.id&&!(bf.id in byId)){byId[bf.id]=bf;cloudList.push(bf);franSync.pushRow(bf.id);}
+        }
+        franchises.length=0;
+        for(var k=0;k<cloudList.length;k++)franchises.push(cloudList[k]);
+        store.set('gs_franchises',franchises);
+        cloud.hydrating=false;
+        fillPickers();renderMgmt();renderDash();renderFV();renderPV();
+      });
+    })
+    .catch(function(){
+      /* blob fetch failed — still run per-row hydration with local migration */
+      franSync.pullAll(function(cloudFrans){
+        cloud.hydrating=true;
+        var cloudList=cloudFrans||[];
+        var byId={};
+        for(var i=0;i<cloudList.length;i++)byId[cloudList[i].id]=cloudList[i];
+        for(var j=0;j<localFrans.length;j++){
+          var lf=localFrans[j];
+          if(!(lf.id in byId)){byId[lf.id]=lf;cloudList.push(lf);franSync.pushRow(lf.id);}
+        }
+        franchises.length=0;
+        for(var k=0;k<cloudList.length;k++)franchises.push(cloudList[k]);
+        store.set('gs_franchises',franchises);
+        cloud.hydrating=false;
+        fillPickers();renderMgmt();renderDash();renderFV();renderPV();
+      });
+    });
 
   /* hydrate entries from the per-row table (multi-user safe) */
   var localEntries={};
