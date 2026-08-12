@@ -341,7 +341,7 @@ var store={
 var SB_URL='https://fajhvuspgsdfjkjoqhjw.supabase.co/rest/v1/';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhamh2dXNwZ3NkZmpram9xaGp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1Nzg5MjIsImV4cCI6MjEwMTE1NDkyMn0.Z7J8iMEj1RVnCOSihuzupTEk-l0tB1yl6JQI-us41Ew';
 var SB_TABLE='kv_store';
-var SB_KEYS=['gs_franchises','gs_spares_v2','gs_month'];
+var SB_KEYS=['gs_spares_v2','gs_month'];
 var cloud={
  hydrating:false,
  hdr:function(extra){var h={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};if(extra)for(var x in extra)h[x]=extra[x];return h;},
@@ -361,7 +361,6 @@ var cloud={
        cloud.hydrating=true;
        var got={};
        for(var i=0;i<rows.length;i++)got[rows[i].k]=rows[i].v;
-       if(got.gs_franchises!==undefined){franchises=got.gs_franchises;store.set('gs_franchises',franchises);}
        if(got.gs_spares_v2!==undefined){spareItems=got.gs_spares_v2;store.set('gs_spares_v2',spareItems);}
        if(got.gs_month!==undefined){month=got.gs_month;store.set('gs_month',month);}
        cloud.hydrating=false;
@@ -394,6 +393,41 @@ var entrySync={
      .then(function(rows){
        var got={};
        for(var i=0;i<rows.length;i++)got[rows[i].id]=rows[i].data;
+       cb(got);
+     })
+     .catch(function(){cb(null);});
+ }
+};
+
+/* ============ per-row franchise sync (multi-user safe) ============
+   Each franchise is one row in franchise_rows, keyed by its id. Adding or
+   editing one franchise never rewrites the others, so a second user's stale
+   list can no longer wipe a franchise someone just created. The whole-blob
+   gs_franchises is kept only as a local cache. */
+var FRAN_TABLE='franchise_rows';
+var franSync={
+ pushRow:function(id){
+   if(cloud.hydrating)return;
+   var f=fran(id);
+   if(!f)return;
+   fetch(SB_URL+FRAN_TABLE,{
+     method:'POST',
+     headers:cloud.hdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+     body:JSON.stringify({id:id,data:f,updated_at:new Date().toISOString()})
+   }).catch(function(){});
+ },
+ deleteRow:function(id){
+   if(cloud.hydrating)return;
+   fetch(SB_URL+FRAN_TABLE+'?id=eq.'+encodeURIComponent(id),{
+     method:'DELETE',headers:cloud.hdr()
+   }).catch(function(){});
+ },
+ pullAll:function(cb){
+   fetch(SB_URL+FRAN_TABLE+'?select=id,data',{headers:cloud.hdr()})
+     .then(function(r){return r.ok?r.json():[];})
+     .then(function(rows){
+       var got=[];
+       for(var i=0;i<rows.length;i++)if(rows[i].data)got.push(rows[i].data);
        cb(got);
      })
      .catch(function(){cb(null);});
@@ -540,23 +574,29 @@ function showCap(){
 function addFranchise(){
   var nm=$('cName').value.trim();
   if(!nm){toast('Enter a franchise name');return;}
-  franchises.push({id:'f'+Date.now(),name:nm,city:$('cCity').value.trim(),state:$('cState').value,
+  var nid='f'+Date.now();
+  franchises.push({id:nid,name:nm,city:$('cCity').value.trim(),state:$('cState').value,
     target:parseFloat($('cTarget').value)||0,days:parseFloat($('cDays').value)||25,
     bpt:parseFloat($('cBpt').value)||24,routes:parseFloat($('cRoutes').value)||0,
     trays:parseFloat($('cTrays').value)||0,
     workers:parseFloat($('cWorkers').value)||0,supervisor:$('cSupervisor').value});
-  store.set('gs_franchises',franchises);
+  store.set('gs_franchises',franchises);   /* local cache */
+  franSync.pushRow(nid);                    /* push only this new franchise */
   $('cName').value='';$('cCity').value='';$('cState').value='';$('cWorkers').value='0';$('cSupervisor').value='No';
   fillPickers();renderMgmt();renderFV();renderPV();toast('Franchise created');
 }
 function editF(id,field,val){
   var f=fran(id);if(!f)return;
   f[field]=(field==='name'||field==='city'||field==='state'||field==='supervisor')?val:(parseFloat(val)||0);
-  store.set('gs_franchises',franchises);fillPickers();renderFV();renderPV();
+  store.set('gs_franchises',franchises);   /* local cache */
+  franSync.pushRow(id);                     /* push only this edited franchise */
+  fillPickers();renderFV();renderPV();
 }
 function delFranchise(id){
   franchises=franchises.filter(function(f){return f.id!==id;});
-  store.set('gs_franchises',franchises);fillPickers();renderMgmt();renderFV();renderPV();
+  store.set('gs_franchises',franchises);   /* local cache */
+  franSync.deleteRow(id);                    /* remove only this franchise row */
+  fillPickers();renderMgmt();renderFV();renderPV();
 }
 function renderMgmt(){
   if(!franchises.length){$('mgmtOut').innerHTML='<div class="empty">No franchises yet. Create the first one above.</div>';return;}
@@ -1395,6 +1435,7 @@ function importData(ev){
     store.set('gs_franchises',franchises);store.set('gs_spares_v2',spareItems);
     try{localStorage.setItem('gs_entries',JSON.stringify(entries));}catch(_){}mem['gs_entries']=entries;
     if(d.entries){for(var ik in entries){if(entries.hasOwnProperty(ik))entrySync.pushRow(ik);}}
+    if(d.franchises){for(var fj=0;fj<franchises.length;fj++)franSync.pushRow(franchises[fj].id);}
     fillPickers();renderMgmt();renderSpares();renderFV();renderPV();toast('Data imported');
   }catch(err){toast('That file could not be read');}};
   rd.readAsText(file);
@@ -1422,6 +1463,27 @@ function seedAndRender(cloudHad){
   /* render immediately from local cache, then hydrate from Supabase and re-render */
   seedAndRender(franchises.length>0);
   cloud.pull(function(cloudHad){ seedAndRender(cloudHad||franchises.length>0); });
+
+  /* hydrate franchises from the per-row table (multi-user safe) */
+  var localFrans=franchises.slice();
+  franSync.pullAll(function(cloudFrans){
+    if(cloudFrans){
+      cloud.hydrating=true;
+      var byId={};
+      for(var i=0;i<cloudFrans.length;i++)byId[cloudFrans[i].id]=cloudFrans[i];
+      /* one-time migration: any local franchise not yet in the cloud gets pushed up and kept */
+      for(var j=0;j<localFrans.length;j++){
+        var lf=localFrans[j];
+        if(!(lf.id in byId)){byId[lf.id]=lf;cloudFrans.push(lf);franSync.pushRow(lf.id);}
+      }
+      /* the cloud (plus migrated locals) is now the source of truth */
+      franchises.length=0;
+      for(var k=0;k<cloudFrans.length;k++)franchises.push(cloudFrans[k]);
+      store.set('gs_franchises',franchises);
+      cloud.hydrating=false;
+      fillPickers();renderMgmt();renderDash();renderFV();renderPV();
+    }
+  });
 
   /* hydrate entries from the per-row table (multi-user safe) */
   var localEntries={};
